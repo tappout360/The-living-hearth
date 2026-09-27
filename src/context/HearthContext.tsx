@@ -109,6 +109,8 @@ interface HearthContextType {
   setIsPrayComposerOpen: (open: boolean) => void;
   isLanguageModalOpen: boolean;
   setIsLanguageModalOpen: (open: boolean) => void;
+  isProtocolModalOpen: boolean;
+  setIsProtocolModalOpen: (open: boolean) => void;
 
   // Offline Resilience
   isOnline: boolean;
@@ -345,6 +347,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [isPrayComposerOpen, setIsPrayComposerOpen] = useState<boolean>(false);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState<boolean>(false);
+  const [isProtocolModalOpen, setIsProtocolModalOpen] = useState<boolean>(false);
 
   const [compliance] = useState<ComplianceState>({
     hipaaSafetyActive: true,
@@ -691,6 +694,8 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsPrayComposerOpen,
         isLanguageModalOpen,
         setIsLanguageModalOpen,
+        isProtocolModalOpen,
+        setIsProtocolModalOpen,
         isOnline,
         offlineQueueCount,
         exportUserData,

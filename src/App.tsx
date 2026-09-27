@@ -10,6 +10,7 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { PrayComposerModal } from './components/PrayComposerModal';
 import { InvitationsModal } from './components/InvitationsModal';
 import { PrayerDetailModal } from './components/PrayerDetailModal';
+import { SanctuaryProtocolModal } from './components/SanctuaryProtocolModal';
 import { LivingLightField } from './components/LivingLightField';
 import { SUPPORTED_LANGUAGES } from './i18n/languages';
 import './App.css';
@@ -85,6 +86,7 @@ const MainSanctuary: React.FC = () => {
       <PrayComposerModal />
       <InvitationsModal />
       <PrayerDetailModal />
+      <SanctuaryProtocolModal />
     </div>
   );
 };

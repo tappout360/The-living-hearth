@@ -37,6 +37,7 @@ export const Header: React.FC = () => {
     invitations,
     setIsInvitationsModalOpen,
     isOnline,
+    setIsProtocolModalOpen,
   } = useHearth();
 
   const [isA11yOpen, setIsA11yOpen] = useState(false);
@@ -482,8 +483,20 @@ export const Header: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2 text-right">
+            <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <button
+                type="button"
+                onClick={() => {
+                  setIsHipaaInfoOpen(false);
+                  setIsProtocolModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-full border border-stone-300/40 text-xs font-serif hover:bg-stone-500/10 flex items-center gap-1.5"
+              >
+                <span>Complete Protocol & Governance Charter</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setIsHipaaInfoOpen(false)}
                 className="px-5 py-2 rounded-full font-serif text-xs font-medium"
                 style={{

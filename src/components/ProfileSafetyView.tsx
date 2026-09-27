@@ -21,6 +21,7 @@ export const ProfileSafetyView: React.FC = () => {
     purgeUserData,
     userProfile,
     setIsInvitationsModalOpen,
+    setIsProtocolModalOpen,
   } = useHearth();
 
   const currentTone = HEARTH_TONES[hearthTone];
@@ -99,9 +100,17 @@ export const ProfileSafetyView: React.FC = () => {
               Federal & HIPAA Compliance Safeguards
             </h3>
           </div>
-          <span className="text-[11px] font-mono text-emerald-600 bg-emerald-500/15 px-2 py-0.5 rounded-full">
-            Federal Standards Met
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsProtocolModalOpen(true)}
+              className="px-3 py-1 rounded-full text-xs font-serif border border-emerald-600/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+            >
+              View Complete Protocol
+            </button>
+            <span className="text-[11px] font-mono text-emerald-600 bg-emerald-500/15 px-2 py-0.5 rounded-full hidden sm:inline">
+              Federal Standards Met
+            </span>
+          </div>
         </div>
 
         <p className="text-xs text-stone-500 leading-relaxed">
