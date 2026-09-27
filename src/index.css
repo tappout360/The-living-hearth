@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --ratio-phi: 1.6180339887;
+    --phi-primary: 61.8%;
+    --phi-secondary: 38.2%;
+
+    /* Fibonacci Spacing */
+    --fibo-1: 8px;
+    --fibo-2: 13px;
+    --fibo-3: 21px;
+    --fibo-4: 34px;
+    --fibo-5: 55px;
+    --fibo-6: 89px;
+
+    /* Time of Day Palette */
+    --bg-dawn: #FDF6F0;
+    --bg-day: #F9F4EF;
+    --bg-dusk: #F5EDE6;
+    --bg-night: #2C2520;
+
+    /* Hearth Tones */
+    --hearth-ember: #E8A87C;
+    --hearth-sage: #A8B5A2;
+    --hearth-indigo: #6B7B8A;
+    --hearth-rose: #D4A5A5;
+    --hearth-golden: #D4B483;
+
+    /* Semantic Neutrals */
+    --status-success: #6E8B6B;
+    --status-warning: #D99B43;
+    --status-destructive: #B85C4B;
+  }
+
+  body {
+    margin: 0;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .font-serif {
+    font-family: "Playfair Display", "Cinzel", Georgia, serif;
+  }
+
+  .font-sans {
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+/* Breath Animation */
+@keyframes breathPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+    filter: drop-shadow(0 0 16px var(--active-hearth-glow, rgba(232, 168, 124, 0.4)));
+  }
+}
+
+@keyframes lightRipple {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.animate-breath {
+  animation: breathPulse 6s ease-in-out infinite;
+}
+
+.animate-ripple {
+  animation: lightRipple 3s ease-out infinite;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.reduced-motion *, .reduced-motion ::before, .reduced-motion ::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Accessible Focus Ring */
+*:focus-visible {
+  outline: 2px solid var(--active-hearth, #E8A87C);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(232, 168, 124, 0.25);
+}
