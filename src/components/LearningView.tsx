@@ -23,6 +23,8 @@ import {
   PlusCircle,
   X,
 } from 'lucide-react';
+import { TraditionVisual } from './ReligiousVisuals';
+import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 
 export const LearningView: React.FC = () => {
   const { hearthTone, timeOfDay, setIsPrayComposerOpen } = useHearth();
@@ -37,6 +39,8 @@ export const LearningView: React.FC = () => {
   const [selectedLesson, setSelectedLesson] = useState<SubLesson | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
   const [savedLessons, setSavedLessons] = useState<string[]>([]);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [galleryTradition, setGalleryTradition] = useState<string | undefined>(undefined);
 
   // Inventory state
   const [inventorySearch, setInventorySearch] = useState('');
@@ -116,13 +120,25 @@ export const LearningView: React.FC = () => {
             </span>
           </div>
 
-          <div>
-            <span className="text-xs uppercase tracking-wider font-serif text-stone-400">
-              {selectedPath.tradition} • Lesson Overview
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-normal leading-snug mt-1 m-0">
-              {selectedLesson.title}
-            </h2>
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center border shadow-xs"
+              style={{
+                backgroundColor: `${currentTone.primary}20`,
+                borderColor: `${currentTone.primary}50`,
+                color: currentTone.primary,
+              }}
+            >
+              <TraditionVisual tradition={selectedPath.tradition} size={30} color={currentTone.primary} />
+            </div>
+            <div>
+              <span className="text-xs uppercase tracking-wider font-serif text-stone-400">
+                {selectedPath.tradition} • Lesson Overview
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-normal leading-snug mt-1 m-0">
+                {selectedLesson.title}
+              </h2>
+            </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-stone-500/5 border border-stone-200/20 text-stone-700 dark:text-stone-300 space-y-3 font-serif text-sm sm:text-base leading-relaxed">
@@ -212,16 +228,50 @@ export const LearningView: React.FC = () => {
             </span>
           </div>
 
-          <div>
-            <div className="text-xs uppercase tracking-wider font-serif text-stone-400">
-              {selectedPath.category} • {selectedPath.tradition}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <button
+                onClick={() => {
+                  setGalleryTradition(selectedPath.tradition);
+                  setIsGalleryOpen(true);
+                }}
+                title="Click to inspect sacred visual iconography"
+                className="w-20 h-20 rounded-3xl shrink-0 flex items-center justify-center border shadow-md hover:scale-105 transition-transform cursor-pointer"
+                style={{
+                  backgroundColor: `${currentTone.primary}20`,
+                  borderColor: `${currentTone.primary}60`,
+                  color: currentTone.primary,
+                }}
+              >
+                <TraditionVisual tradition={selectedPath.tradition || selectedPath.title} size={52} color={currentTone.primary} />
+              </button>
+              <div>
+                <div className="text-xs uppercase tracking-wider font-serif text-stone-400">
+                  {selectedPath.category} • {selectedPath.tradition}
+                </div>
+                <h2 className="font-serif text-2xl sm:text-3xl font-normal leading-snug mt-1 m-0">
+                  {selectedPath.title}
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-500 mt-2 max-w-2xl leading-relaxed">
+                  {selectedPath.shortDescription}
+                </p>
+              </div>
             </div>
-            <h2 className="font-serif text-2xl sm:text-3xl font-normal leading-snug mt-1 m-0">
-              {selectedPath.title}
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 mt-2 max-w-2xl leading-relaxed">
-              {selectedPath.shortDescription}
-            </p>
+            <button
+              onClick={() => {
+                setGalleryTradition(selectedPath.tradition);
+                setIsGalleryOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-serif border hover:scale-102 transition-transform shrink-0"
+              style={{
+                borderColor: `${currentTone.primary}60`,
+                backgroundColor: `${currentTone.primary}15`,
+                color: currentTone.primary,
+              }}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Sacred Visual Symbolism
+            </button>
           </div>
 
           {/* What You Will Learn (Outcomes) */}
@@ -328,6 +378,13 @@ export const LearningView: React.FC = () => {
             </div>
           ))}
         </div>
+
+        {/* Sacred Visuals Gallery Modal */}
+        <SacredVisualsGalleryModal
+          isOpen={isGalleryOpen}
+          onClose={() => setIsGalleryOpen(false)}
+          initialTradition={galleryTradition}
+        />
       </div>
     );
   }
@@ -351,32 +408,49 @@ export const LearningView: React.FC = () => {
             </h2>
           </div>
 
-          {/* Mode Switcher: Active Paths vs Living Inventory */}
-          <div className="flex items-center gap-1.5 p-1 rounded-full border border-stone-200/20 bg-stone-500/5 text-xs">
+          {/* Mode Switcher: Active Paths vs Living Inventory & Sacred Visuals Gallery */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setActiveViewTab('paths')}
-              className={`px-4 py-1.5 rounded-full font-serif transition-all ${
-                activeViewTab === 'paths' ? 'font-semibold shadow-xs' : 'opacity-70'
-              }`}
+              onClick={() => {
+                setGalleryTradition(undefined);
+                setIsGalleryOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-serif border hover:scale-102 transition-transform shadow-xs"
               style={{
-                backgroundColor: activeViewTab === 'paths' ? currentTone.primary : 'transparent',
-                color: activeViewTab === 'paths' ? '#2C2520' : 'inherit',
+                borderColor: `${currentTone.primary}80`,
+                backgroundColor: `${currentTone.primary}18`,
+                color: currentTone.primary,
               }}
             >
-              Curated Paths ({COMPREHENSIVE_LEARNING_PATHS.length})
+              <Sparkles className="w-3.5 h-3.5" />
+              Sacred Visuals Gallery
             </button>
-            <button
-              onClick={() => setActiveViewTab('inventory')}
-              className={`px-4 py-1.5 rounded-full font-serif transition-all ${
-                activeViewTab === 'inventory' ? 'font-semibold shadow-xs' : 'opacity-70'
-              }`}
-              style={{
-                backgroundColor: activeViewTab === 'inventory' ? currentTone.primary : 'transparent',
-                color: activeViewTab === 'inventory' ? '#2C2520' : 'inherit',
-              }}
-            >
-              Living Inventory • Leave Out None
-            </button>
+            <div className="flex items-center gap-1.5 p-1 rounded-full border border-stone-200/20 bg-stone-500/5 text-xs">
+              <button
+                onClick={() => setActiveViewTab('paths')}
+                className={`px-4 py-1.5 rounded-full font-serif transition-all ${
+                  activeViewTab === 'paths' ? 'font-semibold shadow-xs' : 'opacity-70'
+                }`}
+                style={{
+                  backgroundColor: activeViewTab === 'paths' ? currentTone.primary : 'transparent',
+                  color: activeViewTab === 'paths' ? '#2C2520' : 'inherit',
+                }}
+              >
+                Curated Paths ({COMPREHENSIVE_LEARNING_PATHS.length})
+              </button>
+              <button
+                onClick={() => setActiveViewTab('inventory')}
+                className={`px-4 py-1.5 rounded-full font-serif transition-all ${
+                  activeViewTab === 'inventory' ? 'font-semibold shadow-xs' : 'opacity-70'
+                }`}
+                style={{
+                  backgroundColor: activeViewTab === 'inventory' ? currentTone.primary : 'transparent',
+                  color: activeViewTab === 'inventory' ? '#2C2520' : 'inherit',
+                }}
+              >
+                Living Inventory • Leave Out None
+              </button>
+            </div>
           </div>
         </div>
 
@@ -449,12 +523,26 @@ export const LearningView: React.FC = () => {
                     </span>
                   </div>
 
-                  <h3 className="font-serif text-lg font-normal leading-snug group-hover:underline m-0">
-                    {path.title}
-                  </h3>
-                  <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
-                    {path.shortDescription}
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <div
+                      className="w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center border shadow-xs transition-transform group-hover:scale-105"
+                      style={{
+                        backgroundColor: `${currentTone.primary}18`,
+                        borderColor: `${currentTone.primary}40`,
+                        color: currentTone.primary,
+                      }}
+                    >
+                      <TraditionVisual tradition={path.tradition || path.title} size={36} color={currentTone.primary} />
+                    </div>
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <h3 className="font-serif text-lg font-normal leading-snug group-hover:underline m-0">
+                        {path.title}
+                      </h3>
+                      <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed m-0">
+                        {path.shortDescription}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4 mt-3 border-t border-stone-200/20 flex items-center justify-between text-xs">
@@ -554,9 +642,21 @@ export const LearningView: React.FC = () => {
                         </span>
                       </div>
 
-                      <h4 className="font-serif text-base font-normal leading-snug m-0">
-                        {item.name}
-                      </h4>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center border shadow-xs"
+                          style={{
+                            backgroundColor: `${currentTone.primary}18`,
+                            borderColor: `${currentTone.primary}35`,
+                            color: currentTone.primary,
+                          }}
+                        >
+                          <TraditionVisual tradition={item.name} size={24} color={currentTone.primary} />
+                        </div>
+                        <h4 className="font-serif text-base font-normal leading-snug m-0">
+                          {item.name}
+                        </h4>
+                      </div>
                       <p className="text-xs text-stone-500 leading-relaxed">
                         {item.notes}
                       </p>
@@ -657,6 +757,13 @@ export const LearningView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Sacred Visuals Gallery Modal */}
+      <SacredVisualsGalleryModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        initialTradition={galleryTradition}
+      />
     </div>
   );
 };

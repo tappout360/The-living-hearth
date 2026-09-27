@@ -14,6 +14,8 @@ import {
   Radio,
   RefreshCw,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { syncEngine } from '../sync/broadcastEngine';
 
@@ -44,6 +46,7 @@ export const ProfileSafetyView: React.FC = () => {
   const [isPassphraseFormOpen, setIsPassphraseFormOpen] = useState(false);
   const [handleInput, setHandleInput] = useState(authSession?.handle || userProfile.displayName);
   const [passphraseInput, setPassphraseInput] = useState('');
+  const [showPassphraseInput, setShowPassphraseInput] = useState(false);
   const [passphraseMessage, setPassphraseMessage] = useState<string | null>(null);
   const [syncTestMessage, setSyncTestMessage] = useState<string | null>(null);
 
@@ -432,14 +435,30 @@ export const ProfileSafetyView: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-xs text-stone-500 block mb-1">Master Passphrase:</label>
-                  <input
-                    type="password"
-                    value={passphraseInput}
-                    onChange={(e) => setPassphraseInput(e.target.value)}
-                    placeholder="At least 6 characters"
-                    className="w-full text-xs p-2 rounded-xl border bg-transparent focus:outline-none"
-                    style={{ borderColor: `${currentTone.primary}50` }}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassphraseInput ? "text" : "password"}
+                      value={passphraseInput}
+                      onChange={(e) => setPassphraseInput(e.target.value)}
+                      placeholder="At least 6 characters"
+                      className="w-full text-xs p-2 pr-10 rounded-xl border bg-transparent focus:outline-none"
+                      style={{ borderColor: `${currentTone.primary}50` }}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassphraseInput(!showPassphraseInput)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors p-1"
+                      title={showPassphraseInput ? "Hide passphrase" : "View passphrase"}
+                      aria-label={showPassphraseInput ? "Hide passphrase" : "View passphrase"}
+                    >
+                      {showPassphraseInput ? (
+                        <EyeOff className="w-3.5 h-3.5" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
               <button

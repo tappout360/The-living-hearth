@@ -3,7 +3,8 @@ import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
 import type { HearthTone } from '../types';
 import { ConcentricRings, HearthFlameGlow } from './SacredGeometry';
-import { ShieldCheck, Compass, Heart, Lock, ArrowRight, Check, KeyRound, UserCheck } from 'lucide-react';
+import { TraditionVisual } from './ReligiousVisuals';
+import { ShieldCheck, Compass, Heart, Lock, ArrowRight, Check, KeyRound, UserCheck, Eye, EyeOff } from 'lucide-react';
 
 const TRADITION_CHOICES = [
   'Christianity',
@@ -42,6 +43,7 @@ export const OnboardingModal: React.FC = () => {
   const [vaultChoice, setVaultChoice] = useState<'guest' | 'passphrase'>('guest');
   const [passHandle, setPassHandle] = useState<string>(userProfile.displayName !== 'Jason' ? userProfile.displayName : '');
   const [passphrase, setPassphrase] = useState<string>('');
+  const [showPassphrase, setShowPassphrase] = useState<boolean>(false);
   const [passError, setPassError] = useState<string | null>(null);
 
   if (!isOnboardingOpen) return null;
@@ -211,26 +213,43 @@ export const OnboardingModal: React.FC = () => {
               ))}
             </div>
 
-            {/* Primary Tradition Selector */}
+            {/* Primary Tradition Selector with Sacred Visual preview */}
             <div>
-              <label className="text-xs font-serif block text-stone-500 mb-1.5">
-                Primary Tradition Focus:
-              </label>
-              <select
-                value={chosenTradition}
-                onChange={(e) => setChosenTradition(e.target.value)}
-                className="w-full text-xs sm:text-sm p-2.5 rounded-xl border bg-transparent font-serif focus:outline-none"
-                style={{
-                  borderColor: `${currentTone.primary}60`,
-                  color: timeOfDay === 'night' ? '#F9F4EF' : '#2C2520',
-                }}
-              >
-                {TRADITION_CHOICES.map((t) => (
-                  <option key={t} value={t} className="text-stone-900 bg-white dark:bg-stone-900 dark:text-stone-100">
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-serif text-stone-500">
+                  Primary Tradition Focus:
+                </label>
+                <span className="text-[11px] font-serif text-amber-600 dark:text-amber-400">
+                  Unique Sacred Emblem
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center border shadow-xs"
+                  style={{
+                    backgroundColor: `${currentTone.primary}20`,
+                    borderColor: `${currentTone.primary}60`,
+                    color: currentTone.primary,
+                  }}
+                >
+                  <TraditionVisual tradition={chosenTradition} size={30} color={currentTone.primary} />
+                </div>
+                <select
+                  value={chosenTradition}
+                  onChange={(e) => setChosenTradition(e.target.value)}
+                  className="flex-1 text-xs sm:text-sm p-2.5 rounded-xl border bg-transparent font-serif focus:outline-none"
+                  style={{
+                    borderColor: `${currentTone.primary}60`,
+                    color: timeOfDay === 'night' ? '#F9F4EF' : '#2C2520',
+                  }}
+                >
+                  {TRADITION_CHOICES.map((t) => (
+                    <option key={t} value={t} className="text-stone-900 bg-white dark:bg-stone-900 dark:text-stone-100">
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Hearth Tone Selection */}
@@ -396,14 +415,30 @@ export const OnboardingModal: React.FC = () => {
                   <label className="text-xs font-serif block text-stone-500 mb-1">
                     Master Sanctuary Passphrase:
                   </label>
-                  <input
-                    type="password"
-                    value={passphrase}
-                    onChange={(e) => setPassphrase(e.target.value)}
-                    placeholder="At least 6 characters"
-                    className="w-full text-xs sm:text-sm p-2 rounded-xl border bg-transparent focus:outline-none"
-                    style={{ borderColor: `${currentTone.primary}60` }}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassphrase ? "text" : "password"}
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      placeholder="At least 6 characters"
+                      className="w-full text-xs sm:text-sm p-2 pr-10 rounded-xl border bg-transparent focus:outline-none"
+                      style={{ borderColor: `${currentTone.primary}60` }}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassphrase(!showPassphrase)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors p-1"
+                      title={showPassphrase ? "Hide passphrase" : "View passphrase"}
+                      aria-label={showPassphrase ? "Hide passphrase" : "View passphrase"}
+                    >
+                      {showPassphrase ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 {passError && (
                   <p className="text-xs text-rose-500">{passError}</p>

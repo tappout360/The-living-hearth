@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
-import { ConcentricRings, VesicaPiscisSymbol } from './SacredGeometry';
+import { TraditionVisual } from './ReligiousVisuals';
+import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 import { translateSpiritualText } from '../i18n/languages';
 import {
   Users,
@@ -17,6 +18,7 @@ import {
   BadgeCheck,
   Clock,
   Sliders,
+  Sparkles,
   X,
 } from 'lucide-react';
 
@@ -52,6 +54,7 @@ export const RoomsView: React.FC = () => {
   const [safetyNotice, setSafetyNotice] = useState<string | null>(null);
   const [sentSuccessNotification, setSentSuccessNotification] = useState(false);
   const [showOriginalMap, setShowOriginalMap] = useState<Record<string, boolean>>({});
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   // Moderation & Thresholds State
   const [isModerationModalOpen, setIsModerationModalOpen] = useState(false);
@@ -180,23 +183,37 @@ export const RoomsView: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] uppercase tracking-wider font-serif text-stone-400">
-                  {selectedRoom.tradition}
-                </span>
-                <span className="text-stone-300">•</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-400 font-serif flex items-center gap-1">
-                  <Volume2 className="w-3 h-3 text-amber-500" />
-                  Atmosphere: {selectedRoom.atmosphereProfile} drone
-                </span>
+            <div className="flex items-start gap-4">
+              <button
+                onClick={() => setIsGalleryOpen(true)}
+                title="Inspect Sacred Iconography"
+                className="w-16 h-16 rounded-2xl shrink-0 flex items-center justify-center border shadow-xs hover:scale-105 transition-transform cursor-pointer"
+                style={{
+                  backgroundColor: `${currentTone.primary}20`,
+                  borderColor: `${currentTone.primary}50`,
+                  color: currentTone.primary,
+                }}
+              >
+                <TraditionVisual tradition={selectedRoom.tradition || selectedRoom.title} size={40} color={currentTone.primary} />
+              </button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] uppercase tracking-wider font-serif text-stone-400">
+                    {selectedRoom.tradition}
+                  </span>
+                  <span className="text-stone-300">•</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-400 font-serif flex items-center gap-1">
+                    <Volume2 className="w-3 h-3 text-amber-500" />
+                    Atmosphere: {selectedRoom.atmosphereProfile} drone
+                  </span>
+                </div>
+                <h2 className="font-serif text-2xl font-normal leading-snug m-0 mt-1">
+                  {selectedRoom.title}
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-xl">
+                  {selectedRoom.description}
+                </p>
               </div>
-              <h2 className="font-serif text-2xl font-normal leading-snug m-0 mt-1">
-                {selectedRoom.title}
-              </h2>
-              <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-xl">
-                {selectedRoom.description}
-              </p>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -532,6 +549,13 @@ export const RoomsView: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Sacred Visuals Gallery Modal */}
+        <SacredVisualsGalleryModal
+          isOpen={isGalleryOpen}
+          onClose={() => setIsGalleryOpen(false)}
+          initialTradition={selectedRoom?.tradition}
+        />
       </div>
     );
   }
@@ -547,11 +571,25 @@ export const RoomsView: React.FC = () => {
           backgroundColor: timeOfDay === 'night' ? '#2F2620' : '#FFFFFF',
         }}
       >
-        <div className="flex items-center gap-2">
-          <Users className="w-5 h-5" style={{ color: currentTone.primary }} />
-          <h2 className="font-serif text-2xl font-normal leading-snug m-0">
-            Moderated Circles of Faith & Study
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5" style={{ color: currentTone.primary }} />
+            <h2 className="font-serif text-2xl font-normal leading-snug m-0">
+              Moderated Circles of Faith & Study
+            </h2>
+          </div>
+          <button
+            onClick={() => setIsGalleryOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-serif border hover:scale-102 transition-transform shadow-xs shrink-0 self-start sm:self-auto"
+            style={{
+              borderColor: `${currentTone.primary}80`,
+              backgroundColor: `${currentTone.primary}18`,
+              color: currentTone.primary,
+            }}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Sacred Visuals Gallery
+          </button>
         </div>
         <p className="text-xs sm:text-sm text-stone-500 max-w-xl leading-relaxed">
           Step into shared rooms dedicated to your home tradition or explore others with reverent curiosity. Zero recruitment, commercial pitching, or ideological debate allowed.
@@ -601,21 +639,16 @@ export const RoomsView: React.FC = () => {
 
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center ${
+                    className={`w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center transition-transform shadow-xs ${
                       hasActivity ? 'animate-breath' : ''
                     }`}
                     style={{
                       backgroundColor: `${currentTone.primary}20`,
-                      border: `1px solid ${currentTone.primary}`,
+                      border: `1px solid ${currentTone.primary}50`,
+                      color: currentTone.primary,
                     }}
                   >
-                    {room.motif === 'circle' ? (
-                      <ConcentricRings size={36} ringsCount={2} glowColor={currentTone.primary} />
-                    ) : room.motif === 'rings' ? (
-                      <ConcentricRings size={36} ringsCount={3} glowColor={currentTone.primary} />
-                    ) : (
-                      <VesicaPiscisSymbol size={32} color={currentTone.primary} />
-                    )}
+                    <TraditionVisual tradition={room.tradition || room.title} size={30} color={currentTone.primary} />
                   </div>
                   <div>
                     <h3 className="font-serif text-base font-normal leading-snug m-0">
@@ -643,6 +676,12 @@ export const RoomsView: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Sacred Visuals Gallery Modal */}
+      <SacredVisualsGalleryModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+      />
     </div>
   );
 };

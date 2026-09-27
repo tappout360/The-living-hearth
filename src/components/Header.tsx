@@ -12,6 +12,7 @@ import {
   Sunset,
   ShieldCheck,
   Eye,
+  EyeOff,
   PhoneCall,
   X,
   Globe,
@@ -19,7 +20,9 @@ import {
   WifiOff,
   Lock,
   KeyRound,
+  Sparkles,
 } from 'lucide-react';
+import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 import type { HearthTone, TimeOfDay } from '../types';
 
 export const Header: React.FC = () => {
@@ -52,7 +55,9 @@ export const Header: React.FC = () => {
   const [isHipaaInfoOpen, setIsHipaaInfoOpen] = useState(false);
   const [isTonePickerOpen, setIsTonePickerOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [unlockPass, setUnlockPass] = useState('');
+  const [showUnlockPass, setShowUnlockPass] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
 
   const pendingInvitesCount = invitations.filter((i) => i.status === 'pending').length;
@@ -126,6 +131,22 @@ export const Header: React.FC = () => {
             >
               <Globe className="w-3.5 h-3.5 text-amber-500" />
               <span className="text-[11px] font-serif">{activeLangConfig.nativeName}</span>
+            </button>
+
+            {/* Sacred Visuals Gallery Trigger */}
+            <button
+              onClick={() => setIsGalleryOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all hover:scale-102"
+              style={{
+                borderColor: `${currentTone.primary}80`,
+                backgroundColor: `${currentTone.primary}18`,
+                color: currentTone.primary,
+              }}
+              title="Sacred Visuals & Religious Iconography Gallery"
+              aria-label="Open Sacred Visuals Gallery"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-serif hidden lg:inline">Sacred Visuals</span>
             </button>
 
             {/* Invitations & Connections Trigger */}
@@ -666,14 +687,30 @@ export const Header: React.FC = () => {
                 <p className="text-xs text-stone-500">
                   Enter your master passphrase to unlock your sovereign encryption key and reveal private journal reflections:
                 </p>
-                <input
-                  type="password"
-                  value={unlockPass}
-                  onChange={(e) => setUnlockPass(e.target.value)}
-                  placeholder="Master Passphrase"
-                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl border bg-transparent focus:outline-none"
-                  style={{ borderColor: `${currentTone.primary}60` }}
-                />
+                <div className="relative">
+                  <input
+                    type={showUnlockPass ? "text" : "password"}
+                    value={unlockPass}
+                    onChange={(e) => setUnlockPass(e.target.value)}
+                    placeholder="Master Passphrase"
+                    className="w-full text-xs sm:text-sm p-2.5 pr-10 rounded-xl border bg-transparent focus:outline-none"
+                    style={{ borderColor: `${currentTone.primary}60` }}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowUnlockPass(!showUnlockPass)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors p-1"
+                    title={showUnlockPass ? "Hide passphrase" : "View passphrase"}
+                    aria-label={showUnlockPass ? "Hide passphrase" : "View passphrase"}
+                  >
+                    {showUnlockPass ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
                 {unlockError && (
                   <p className="text-xs text-rose-500">{unlockError}</p>
                 )}
@@ -731,6 +768,12 @@ export const Header: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Sacred Visuals Gallery Modal */}
+      <SacredVisualsGalleryModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+      />
     </>
   );
 };

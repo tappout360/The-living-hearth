@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
 import { ConcentricRings, GoldenRatioSpiral } from './SacredGeometry';
+import { TraditionVisual } from './ReligiousVisuals';
+import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 import type { TraditionFilterScope } from '../types';
 import {
   Sparkles,
@@ -48,6 +50,7 @@ export const DashboardView: React.FC = () => {
   const [tempName, setTempName] = useState(userProfile.displayName);
   const [prayerFilter, setPrayerFilter] = useState<'all' | 'journal' | 'sent' | 'received'>('all');
   const [showTraditionFirstTimeReminder, setShowTraditionFirstTimeReminder] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   // Time of day greeting
   const getGreeting = () => {
@@ -220,8 +223,25 @@ export const DashboardView: React.FC = () => {
             </p>
           </div>
 
-          <div className="hidden sm:block shrink-0 relative">
-            <ConcentricRings size={96} ringsCount={3} glowColor={currentTone.primary} className="animate-breath" />
+          <div className="shrink-0 relative flex flex-col items-center gap-1.5 self-center sm:self-auto">
+            <button
+              onClick={() => setIsGalleryOpen(true)}
+              title={`Inspect Sacred Iconography for ${userProfile.primaryTradition}`}
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center border shadow-md hover:scale-105 transition-transform cursor-pointer relative group"
+              style={{
+                backgroundColor: `${currentTone.primary}20`,
+                borderColor: `${currentTone.primary}60`,
+                color: currentTone.primary,
+              }}
+            >
+              <TraditionVisual tradition={userProfile.primaryTradition} size={54} color={currentTone.primary} glow={true} />
+              <span className="absolute -bottom-2 px-2 py-0.5 rounded-full bg-stone-900/85 text-[10px] text-amber-200 border border-amber-400/40 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xs">
+                Sacred Visual
+              </span>
+            </button>
+            <span className="text-[11px] font-serif text-stone-400 text-center max-w-[110px] truncate">
+              {userProfile.primaryTradition}
+            </span>
           </div>
         </div>
 
@@ -720,8 +740,11 @@ export const DashboardView: React.FC = () => {
                       backgroundColor: userProfile.primaryTradition === trad ? `${currentTone.primary}20` : 'transparent',
                     }}
                   >
-                    <span>{trad}</span>
-                    {userProfile.primaryTradition === trad && <Check className="w-3.5 h-3.5 text-amber-500" />}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <TraditionVisual tradition={trad} size={18} color={currentTone.primary} />
+                      <span className="truncate">{trad}</span>
+                    </div>
+                    {userProfile.primaryTradition === trad && <Check className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -775,6 +798,12 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Sacred Visuals Gallery Modal */}
+      <SacredVisualsGalleryModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        initialTradition={userProfile.primaryTradition}
+      />
     </div>
   );
 };
