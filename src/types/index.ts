@@ -48,6 +48,56 @@ export interface PrayerIntention {
   traditionOrPath?: string;
 }
 
+export type PathLevelName = 'Beginner' | 'Intermediate' | 'Deeper Exploration';
+
+export type TraditionCategory =
+  | 'Abrahamic & Related'
+  | 'Dharmic / Indian-Origin'
+  | 'East Asian & Related'
+  | 'Iranian & Ancient Near Eastern'
+  | 'Indigenous & Traditional'
+  | 'Spiritualism & Spiritism'
+  | 'New Religious & Esoteric'
+  | 'Modern, Interfaith & Contemplative'
+  | 'Historical Antiquity Continuities';
+
+export type CoverageStatus = 'Live' | 'In Research' | 'Queued' | 'Needs Expert Partner';
+
+export interface SubLesson {
+  id: string;
+  title: string;
+  estimatedMinutes: number;
+  summary: string;
+  internalDiversityNotes: string;
+  comparativeLinks?: string[];
+}
+
+export interface LevelModuleGroup {
+  level: PathLevelName;
+  estimatedTime: string;
+  lessons: SubLesson[];
+}
+
+export interface ComprehensiveLearningPath {
+  id: string;
+  title: string;
+  tradition: string;
+  category: TraditionCategory;
+  shortDescription: string;
+  learningOutcomes: string[];
+  levelGroups: LevelModuleGroup[];
+  scholarlyCitations: string[];
+  lastScholarlyReviewDate: string;
+  coverageStatus: CoverageStatus;
+  comparativePairs?: {
+    partnerTradition: string;
+    sharedPrinciple: string;
+    traditionAPerspective: string;
+    traditionBPerspective: string;
+    intersectionInsight: string;
+  };
+}
+
 export interface LearningModule {
   id: string;
   title: string;
@@ -67,6 +117,16 @@ export interface LearningModule {
     traditionBPerspective: string;
     intersectionInsight: string;
   };
+}
+
+export interface LivingInventoryEntry {
+  id: string;
+  name: string;
+  category: TraditionCategory;
+  coverageStatus: CoverageStatus;
+  notes: string;
+  communityPresence: string;
+  scholarlyPartnership?: string;
 }
 
 export interface AccessibilitySettings {

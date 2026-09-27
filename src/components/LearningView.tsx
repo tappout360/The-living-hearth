@@ -1,38 +1,100 @@
 import React, { useState } from 'react';
 import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
-import { VesicaPiscisSymbol } from './SacredGeometry';
+import { COMPREHENSIVE_LEARNING_PATHS, LIVING_INVENTORY_TRADITIONS } from '../data/learningPathsData';
+import type {
+  ComprehensiveLearningPath,
+  PathLevelName,
+  SubLesson,
+  TraditionCategory,
+} from '../types';
 import {
   BookOpen,
   ArrowLeft,
-  CheckCircle2,
+  Clock,
+  CheckCircle,
   Bookmark,
   Sparkles,
   ChevronRight,
   Feather,
+  Search,
+  CheckCircle2,
+  Compass,
+  PlusCircle,
+  X,
 } from 'lucide-react';
 
 export const LearningView: React.FC = () => {
-  const {
-    learningModules,
-    selectedLearningId,
-    setSelectedLearningId,
-    hearthTone,
-    timeOfDay,
-    setIsPrayComposerOpen,
-  } = useHearth();
-
+  const { hearthTone, timeOfDay, setIsPrayComposerOpen } = useHearth();
   const currentTone = HEARTH_TONES[hearthTone];
-  const selectedModule = learningModules.find((m) => m.id === selectedLearningId);
 
-  const [activeTab, setActiveTab] = useState<'content' | 'comparative'>('content');
-  const [isSaved, setIsSaved] = useState(false);
+  // Active top-level mode: 'paths' or 'inventory' (Leave Out None roadmap)
+  const [activeViewTab, setActiveViewTab] = useState<'paths' | 'inventory'>('paths');
 
-  // If a learning module is selected, render reading and comparative views
-  if (selectedModule) {
+  // Paths state
+  const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<PathLevelName>('Beginner');
+  const [selectedLesson, setSelectedLesson] = useState<SubLesson | null>(null);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
+  const [savedLessons, setSavedLessons] = useState<string[]>([]);
+
+  // Inventory state
+  const [inventorySearch, setInventorySearch] = useState('');
+  const [inventoryStatusFilter, setInventoryStatusFilter] = useState<string>('All');
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestedTraditionName, setRequestedTraditionName] = useState('');
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
+
+  const selectedPath: ComprehensiveLearningPath | undefined = COMPREHENSIVE_LEARNING_PATHS.find(
+    (p) => p.id === selectedPathId
+  );
+
+  const handleToggleSaveLesson = (lessonId: string) => {
+    setSavedLessons((prev) =>
+      prev.includes(lessonId) ? prev.filter((id) => id !== lessonId) : [...prev, lessonId]
+    );
+  };
+
+  const handleRequestTradition = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestedTraditionName.trim()) return;
+    setRequestSubmitted(true);
+    setTimeout(() => {
+      setRequestSubmitted(false);
+      setIsRequestModalOpen(false);
+      setRequestedTraditionName('');
+    }, 2500);
+  };
+
+  const categories: TraditionCategory[] = [
+    'Abrahamic & Related',
+    'Dharmic / Indian-Origin',
+    'East Asian & Related',
+    'Indigenous & Traditional',
+    'Spiritualism & Spiritism',
+    'Modern, Interfaith & Contemplative',
+  ];
+
+  const filteredPaths = COMPREHENSIVE_LEARNING_PATHS.filter((p) => {
+    if (activeCategoryFilter === 'All') return true;
+    return p.category === activeCategoryFilter;
+  });
+
+  const filteredInventory = LIVING_INVENTORY_TRADITIONS.filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+      item.category.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+      item.notes.toLowerCase().includes(inventorySearch.toLowerCase());
+    const matchesStatus =
+      inventoryStatusFilter === 'All' || item.coverageStatus === inventoryStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // 1. Detailed Lesson Reader Modal
+  if (selectedLesson && selectedPath) {
+    const isSaved = savedLessons.includes(selectedLesson.id);
     return (
       <div className="space-y-6 pb-24 animate-in fade-in duration-300">
-        {/* Navigation & Header */}
         <div
           className="rounded-3xl p-6 sm:p-8 border shadow-xs space-y-4"
           style={{
@@ -42,304 +104,559 @@ export const LearningView: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <button
-              onClick={() => setSelectedLearningId(null)}
+              onClick={() => setSelectedLesson(null)}
               className="inline-flex items-center gap-1.5 text-xs font-serif text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"
-              aria-label="Return to all learning paths"
+              aria-label="Back to path lessons"
             >
               <ArrowLeft className="w-4 h-4" />
-              Return to Pathways
+              Back to {selectedPath.title}
             </button>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-mono">
-                Scholarly Verified
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <div className="text-[11px] uppercase tracking-wider font-serif text-stone-400">
-              {selectedModule.tradition} • {selectedModule.timeEstimate}
-            </div>
-            <h2 className="font-serif text-2xl sm:text-3xl font-normal leading-snug mt-1 m-0">
-              {selectedModule.title}
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 mt-2 max-w-2xl leading-relaxed">
-              {selectedModule.shortDescription}
-            </p>
-          </div>
-
-          {/* Academic citation notice */}
-          <div className="p-3 rounded-2xl bg-stone-500/5 border border-stone-200/20 text-xs flex items-center gap-2 text-stone-500">
-            <Feather className="w-3.5 h-3.5 shrink-0" style={{ color: currentTone.primary }} />
-            <span>
-              <strong>Academic Source: </strong>
-              {selectedModule.scholarlyCitation}
+            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
+              {selectedLevel} • {selectedLesson.estimatedMinutes} min
             </span>
           </div>
 
-          {/* View Mode Toggle (Content vs Vesica Piscis Comparative) */}
-          {selectedModule.comparativePair && (
-            <div className="flex items-center gap-2 pt-2 border-t border-stone-200/20">
-              <button
-                onClick={() => setActiveTab('content')}
-                className={`px-4 py-1.5 rounded-full text-xs font-serif transition-all ${
-                  activeTab === 'content' ? 'font-semibold shadow-xs' : 'opacity-60'
-                }`}
-                style={{
-                  backgroundColor: activeTab === 'content' ? currentTone.primary : 'transparent',
-                  color: activeTab === 'content' ? '#2C2520' : 'inherit',
-                  border: `1px solid ${currentTone.primary}50`,
-                }}
-              >
-                📖 Detailed Discourse
-              </button>
-              <button
-                onClick={() => setActiveTab('comparative')}
-                className={`px-4 py-1.5 rounded-full text-xs font-serif transition-all flex items-center gap-1.5 ${
-                  activeTab === 'comparative' ? 'font-semibold shadow-xs' : 'opacity-60'
-                }`}
-                style={{
-                  backgroundColor: activeTab === 'comparative' ? currentTone.primary : 'transparent',
-                  color: activeTab === 'comparative' ? '#2C2520' : 'inherit',
-                  border: `1px solid ${currentTone.primary}50`,
-                }}
-              >
-                <VesicaPiscisSymbol size={16} color="currentColor" />
-                Vesica Piscis Comparative Study
-              </button>
+          <div>
+            <span className="text-xs uppercase tracking-wider font-serif text-stone-400">
+              {selectedPath.tradition} • Lesson Overview
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-normal leading-snug mt-1 m-0">
+              {selectedLesson.title}
+            </h2>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-stone-500/5 border border-stone-200/20 text-stone-700 dark:text-stone-300 space-y-3 font-serif text-sm sm:text-base leading-relaxed">
+            <p>{selectedLesson.summary}</p>
+          </div>
+
+          {/* Internal Diversity & Perspectives Note */}
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-serif font-semibold text-amber-700 dark:text-amber-300">
+              <Compass className="w-4 h-4" />
+              <span>Internal Diversity & Living Perspectives</span>
             </div>
-          )}
-        </div>
+            <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-sans">
+              {selectedLesson.internalDiversityNotes}
+            </p>
+          </div>
 
-        {/* View Tab 1: Detailed Discourse */}
-        {activeTab === 'content' && (
-          <article className="space-y-6">
-            {selectedModule.contentSections.map((sec, idx) => (
-              <div
-                key={idx}
-                className="p-6 sm:p-7 rounded-3xl border shadow-xs space-y-2.5 transition-all"
-                style={{
-                  borderColor: 'rgba(232, 168, 124, 0.2)',
-                  backgroundColor: timeOfDay === 'night' ? '#2A221C' : '#FFFDFB',
-                }}
-              >
-                <h3 className="font-serif text-lg font-normal leading-snug m-0" style={{ color: currentTone.primary }}>
-                  {sec.heading}
-                </h3>
-                <p className="font-serif text-sm sm:text-base leading-relaxed text-stone-700 dark:text-stone-300">
-                  {sec.body}
-                </p>
-              </div>
-            ))}
-
-            {/* Reading Actions Bar */}
-            <div className="p-4 rounded-3xl border flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsSaved(!isSaved)}
-                  className="px-4 py-2 rounded-full border border-stone-300/40 hover:border-amber-400 flex items-center gap-1.5 font-serif"
-                >
-                  <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current text-amber-500' : ''}`} />
-                  <span>{isSaved ? 'Saved to Sanctuary' : 'Save for Contemplation'}</span>
-                </button>
-                <button
-                  onClick={() => setIsPrayComposerOpen(true)}
-                  className="px-4 py-2 rounded-full border border-stone-300/40 hover:border-amber-400 flex items-center gap-1.5 font-serif"
-                >
-                  <Sparkles className="w-3.5 h-3.5" style={{ color: currentTone.primary }} />
-                  <span>Add to Prayer List</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 text-emerald-600 font-mono">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Marked Complete</span>
-              </div>
+          {/* Scholarly Citations */}
+          <div className="p-4 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-serif text-stone-500 font-semibold">
+              <Feather className="w-3.5 h-3.5" style={{ color: currentTone.primary }} />
+              <span>Scholarly Sourcing & Review:</span>
             </div>
-          </article>
-        )}
-
-        {/* View Tab 2: Vesica Piscis Comparative Dual-Column Study */}
-        {activeTab === 'comparative' && selectedModule.comparativePair && (
-          <div className="space-y-6">
-            {/* Vesica Piscis Central Geometric Header */}
-            <div
-              className="p-6 sm:p-8 rounded-3xl border text-center space-y-3 relative overflow-hidden"
-              style={{
-                borderColor: `${currentTone.primary}50`,
-                backgroundColor: timeOfDay === 'night' ? '#2E251E' : '#FAF6F0',
-              }}
-            >
-              <div className="flex justify-center">
-                <VesicaPiscisSymbol size={96} color={currentTone.primary} className="animate-breath" />
-              </div>
-              <h3 className="font-serif text-xl sm:text-2xl font-normal m-0">
-                Intersection of Truth: {selectedModule.comparativePair.sharedPrinciple}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-500 max-w-lg mx-auto">
-                In sacred geometry, the Vesica Piscis symbolizes the shared lens where two unique traditions illuminate a singular universal truth without erasing their distinct heritage.
-              </p>
-            </div>
-
-            {/* Dual Column Comparative Layout guided by Golden Ratio / Vesica Piscis */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-              {/* Tradition A Column */}
-              <div
-                className="p-6 rounded-3xl border space-y-3 shadow-xs"
-                style={{
-                  borderColor: 'rgba(232, 168, 124, 0.25)',
-                  backgroundColor: timeOfDay === 'night' ? '#272019' : '#FFFFFF',
-                }}
-              >
-                <div className="text-[11px] uppercase tracking-wider font-serif text-stone-400">
-                  Tradition Stream I
-                </div>
-                <h4 className="font-serif text-base font-normal">
-                  {selectedModule.comparativePair.partnerTradition.split('&')[0].trim()}
-                </h4>
-                <p className="font-serif text-sm leading-relaxed text-stone-600 dark:text-stone-300">
-                  {selectedModule.comparativePair.traditionAPerspective}
-                </p>
-              </div>
-
-              {/* Tradition B Column */}
-              <div
-                className="p-6 rounded-3xl border space-y-3 shadow-xs"
-                style={{
-                  borderColor: 'rgba(232, 168, 124, 0.25)',
-                  backgroundColor: timeOfDay === 'night' ? '#272019' : '#FFFFFF',
-                }}
-              >
-                <div className="text-[11px] uppercase tracking-wider font-serif text-stone-400">
-                  Tradition Stream II
-                </div>
-                <h4 className="font-serif text-base font-normal">
-                  {selectedModule.comparativePair.partnerTradition.split('&')[1]?.trim() || 'Contemplative Interfaith'}
-                </h4>
-                <p className="font-serif text-sm leading-relaxed text-stone-600 dark:text-stone-300">
-                  {selectedModule.comparativePair.traditionBPerspective}
-                </p>
-              </div>
-            </div>
-
-            {/* The Lens of Harmony Card */}
-            <div
-              className="p-6 rounded-3xl border space-y-2 text-center"
-              style={{
-                borderColor: currentTone.primary,
-                backgroundColor: `${currentTone.primary}12`,
-              }}
-            >
-              <span className="text-xs uppercase font-serif tracking-widest text-stone-500">
-                The Sacred Synthesis
-              </span>
-              <p className="font-serif text-sm sm:text-base italic max-w-xl mx-auto leading-relaxed">
-                “{selectedModule.comparativePair.intersectionInsight}”
-              </p>
+            <ul className="text-xs text-stone-500 list-disc list-inside space-y-0.5 font-sans">
+              {selectedPath.scholarlyCitations.map((cite, i) => (
+                <li key={i}>{cite}</li>
+              ))}
+            </ul>
+            <div className="text-[10px] text-stone-400 pt-1">
+              Last scholarly peer-review: {selectedPath.lastScholarlyReviewDate}
             </div>
           </div>
-        )}
+
+          {/* Action Buttons */}
+          <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-stone-200/20 text-xs">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleToggleSaveLesson(selectedLesson.id)}
+                className="px-4 py-2 rounded-full border border-stone-300/40 hover:border-amber-400 flex items-center gap-1.5 font-serif"
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current text-amber-500' : ''}`} />
+                <span>{isSaved ? 'Saved to Sanctuary' : 'Save Lesson'}</span>
+              </button>
+              <button
+                onClick={() => setIsPrayComposerOpen(true)}
+                className="px-4 py-2 rounded-full border border-stone-300/40 hover:border-amber-400 flex items-center gap-1.5 font-serif"
+              >
+                <Sparkles className="w-3.5 h-3.5" style={{ color: currentTone.primary }} />
+                <span>Add Intention to Prayer Vault</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-emerald-600 font-mono text-xs">
+              <CheckCircle className="w-4 h-4" />
+              <span>Lesson Complete</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Otherwise, render Path of Connected Nodes (Beginner -> Deeper)
+  // 2. Path Level & Lessons Overview View
+  if (selectedPath) {
+    const activeLevelGroup = selectedPath.levelGroups.find((g) => g.level === selectedLevel) || selectedPath.levelGroups[0];
+
+    return (
+      <div className="space-y-6 pb-24 animate-in fade-in duration-300">
+        <div
+          className="rounded-3xl p-6 sm:p-8 border shadow-xs space-y-4"
+          style={{
+            borderColor: 'rgba(232, 168, 124, 0.25)',
+            backgroundColor: timeOfDay === 'night' ? '#2E2620' : '#FFFFFF',
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setSelectedPathId(null)}
+              className="inline-flex items-center gap-1.5 text-xs font-serif text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"
+              aria-label="Back to all learning paths"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Return to All Learning Paths
+            </button>
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-mono">
+              Peer-Reviewed Curriculum
+            </span>
+          </div>
+
+          <div>
+            <div className="text-xs uppercase tracking-wider font-serif text-stone-400">
+              {selectedPath.category} • {selectedPath.tradition}
+            </div>
+            <h2 className="font-serif text-2xl sm:text-3xl font-normal leading-snug mt-1 m-0">
+              {selectedPath.title}
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-500 mt-2 max-w-2xl leading-relaxed">
+              {selectedPath.shortDescription}
+            </p>
+          </div>
+
+          {/* What You Will Learn (Outcomes) */}
+          <div className="p-4 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-2">
+            <span className="text-xs font-serif font-semibold text-stone-600 dark:text-stone-300 block">
+              What You Will Learn (Outcomes):
+            </span>
+            <ul className="text-xs text-stone-500 space-y-1 font-sans">
+              {selectedPath.learningOutcomes.map((outcome, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0" />
+                  <span>{outcome}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Level Tabs (Beginner -> Intermediate -> Deeper Exploration) */}
+          <div className="flex items-center gap-2 pt-2 border-t border-stone-200/20 overflow-x-auto scrollbar-none">
+            {selectedPath.levelGroups.map((group) => (
+              <button
+                key={group.level}
+                onClick={() => setSelectedLevel(group.level)}
+                className={`px-4 py-2 rounded-full text-xs font-serif shrink-0 transition-all ${
+                  selectedLevel === group.level ? 'font-semibold shadow-xs' : 'opacity-60 hover:opacity-90'
+                }`}
+                style={{
+                  backgroundColor:
+                    selectedLevel === group.level ? currentTone.primary : 'transparent',
+                  color: selectedLevel === group.level ? '#2C2520' : 'inherit',
+                  border: `1px solid ${currentTone.primary}50`,
+                }}
+              >
+                {group.level} ({group.estimatedTime})
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* List of Lessons for Selected Level */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-2 text-xs font-serif text-stone-400">
+            <span>
+              {selectedLevel} Modules ({activeLevelGroup.lessons.length} lessons)
+            </span>
+            <span>Total Duration: {activeLevelGroup.estimatedTime}</span>
+          </div>
+
+          {activeLevelGroup.lessons.map((lesson, idx) => (
+            <div
+              key={lesson.id}
+              onClick={() => setSelectedLesson(lesson)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') setSelectedLesson(lesson);
+              }}
+              className="group p-5 rounded-3xl border shadow-xs hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-101 flex items-start justify-between gap-4"
+              style={{
+                borderColor: 'rgba(232, 168, 124, 0.25)',
+                backgroundColor: timeOfDay === 'night' ? '#2A221C' : '#FFFDFB',
+              }}
+            >
+              <div className="flex items-start gap-3.5">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-serif text-xs font-semibold"
+                  style={{
+                    backgroundColor: `${currentTone.primary}20`,
+                    border: `1.5px solid ${currentTone.primary}`,
+                  }}
+                >
+                  {idx + 1}
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-stone-400 font-mono flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {lesson.estimatedMinutes} min
+                    </span>
+                    {lesson.comparativeLinks && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                        Comparative Links
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-serif text-base font-normal leading-snug group-hover:underline m-0">
+                    {lesson.title}
+                  </h3>
+                  <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed">
+                    {lesson.summary}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 self-center transition-transform group-hover:translate-x-1"
+                style={{
+                  backgroundColor: `${currentTone.primary}18`,
+                  color: currentTone.primary,
+                }}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Main Learning Center View with "Leave Out None" Mandate
   return (
-    <div className="space-y-6 pb-24">
-      {/* Learning Overview Banner */}
+    <div className="space-y-8 pb-24">
+      {/* Banner with Leave Out None Mandate */}
       <div
-        className="rounded-3xl p-6 sm:p-7 border shadow-xs space-y-2"
+        className="rounded-3xl p-6 sm:p-8 border shadow-xs space-y-4"
         style={{
           borderColor: 'rgba(232, 168, 124, 0.25)',
           backgroundColor: timeOfDay === 'night' ? '#2F2620' : '#FFFFFF',
         }}
       >
-        <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5" style={{ color: currentTone.primary }} />
-          <h2 className="font-serif text-2xl font-normal leading-snug m-0">
-            Scholarly Wisdom Pathways
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <BookOpen className="w-5 h-5" style={{ color: currentTone.primary }} />
+            <h2 className="font-serif text-2xl font-normal leading-snug m-0">
+              The Learning Sanctuary
+            </h2>
+          </div>
+
+          {/* Mode Switcher: Active Paths vs Living Inventory */}
+          <div className="flex items-center gap-1.5 p-1 rounded-full border border-stone-200/20 bg-stone-500/5 text-xs">
+            <button
+              onClick={() => setActiveViewTab('paths')}
+              className={`px-4 py-1.5 rounded-full font-serif transition-all ${
+                activeViewTab === 'paths' ? 'font-semibold shadow-xs' : 'opacity-70'
+              }`}
+              style={{
+                backgroundColor: activeViewTab === 'paths' ? currentTone.primary : 'transparent',
+                color: activeViewTab === 'paths' ? '#2C2520' : 'inherit',
+              }}
+            >
+              Curated Paths ({COMPREHENSIVE_LEARNING_PATHS.length})
+            </button>
+            <button
+              onClick={() => setActiveViewTab('inventory')}
+              className={`px-4 py-1.5 rounded-full font-serif transition-all ${
+                activeViewTab === 'inventory' ? 'font-semibold shadow-xs' : 'opacity-70'
+              }`}
+              style={{
+                backgroundColor: activeViewTab === 'inventory' ? currentTone.primary : 'transparent',
+                color: activeViewTab === 'inventory' ? '#2C2520' : 'inherit',
+              }}
+            >
+              Living Inventory • Leave Out None
+            </button>
+          </div>
         </div>
-        <p className="text-xs sm:text-sm text-stone-500 max-w-xl leading-relaxed">
-          Curated learning progressions crafted with university religion scholars and authentic practitioners. Rigorous, respectful, and pressure-free.
-        </p>
+
+        {/* Maximal Inclusivity Mandate ("Leave Out None") Covenant */}
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5">
+          <span className="font-serif font-semibold text-amber-700 dark:text-amber-300 block">
+            ★ Maximal Inclusivity Mandate (“Leave Out None”)
+          </span>
+          <p className="text-stone-600 dark:text-stone-300 leading-relaxed font-sans">
+            No spiritual, religious, indigenous, or philosophical tradition that has attracted a community of practitioners is permanently excluded. All traditions—from major world religions to Spiritualism & Spiritism, Indigenous lifeways, and contemporary paths—are presented with equal scholarly rigor, multiple internal perspectives, and zero proselytizing.
+          </p>
+        </div>
       </div>
 
-      {/* Path of Connected Nodes (Beginner -> Deeper) */}
-      <div className="space-y-4">
-        {learningModules.map((module, index) => {
-          const isComplete = module.progressPercent === 100;
-          return (
-            <div
-              key={module.id}
-              onClick={() => setSelectedLearningId(module.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  setSelectedLearningId(module.id);
-                }
-              }}
-              className="group p-6 rounded-3xl border shadow-xs hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-101 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-              style={{
-                borderColor: 'rgba(232, 168, 124, 0.25)',
-                backgroundColor: timeOfDay === 'night' ? '#2A221C' : '#FFFDFB',
-              }}
-              aria-label={`Open learning pathway: ${module.title}`}
-            >
-              <div className="flex items-start gap-4">
-                {/* Node Ring Indicator */}
-                <div className="relative shrink-0 flex items-center justify-center w-14 h-14">
-                  <div
-                    className="w-14 h-14 rounded-full flex items-center justify-center transition-all group-hover:scale-105"
-                    style={{
-                      border: `2px solid ${isComplete ? '#6E8B6B' : currentTone.primary}`,
-                      backgroundColor: `${currentTone.primary}15`,
-                    }}
-                  >
-                    <span className="font-serif text-xs font-semibold">
-                      0{index + 1}
-                    </span>
-                  </div>
-                </div>
+      {/* VIEW TAB 1: CURATED LEARNING PATHS */}
+      {activeViewTab === 'paths' && (
+        <div className="space-y-6">
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {['All', ...categories].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategoryFilter(cat)}
+                className={`px-4 py-1.5 rounded-full text-xs font-serif shrink-0 transition-all ${
+                  activeCategoryFilter === cat ? 'font-semibold shadow-xs' : 'opacity-60 hover:opacity-100'
+                }`}
+                style={{
+                  backgroundColor:
+                    activeCategoryFilter === cat ? `${currentTone.primary}25` : 'transparent',
+                  borderColor: currentTone.primary,
+                  border: '1px solid',
+                  color: activeCategoryFilter === cat ? currentTone.primary : 'inherit',
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+          {/* Grid of Learning Paths */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {filteredPaths.map((path) => (
+              <div
+                key={path.id}
+                onClick={() => {
+                  setSelectedPathId(path.id);
+                  setSelectedLevel('Beginner');
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setSelectedPathId(path.id);
+                    setSelectedLevel('Beginner');
+                  }
+                }}
+                className="group p-6 rounded-3xl border shadow-xs hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-101 flex flex-col justify-between"
+                style={{
+                  borderColor: 'rgba(232, 168, 124, 0.25)',
+                  backgroundColor: timeOfDay === 'night' ? '#2A221C' : '#FFFDFB',
+                }}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-serif tracking-wider text-stone-400">
-                      {module.tradition}
+                      {path.category}
                     </span>
-                    <span className="text-stone-300">•</span>
-                    <span className="text-[10px] text-stone-500">{module.timeEstimate}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-mono">
+                      {path.levelGroups.length} Levels
+                    </span>
                   </div>
-                  <h3 className="font-serif text-base sm:text-lg font-normal leading-snug group-hover:underline">
-                    {module.title}
+
+                  <h3 className="font-serif text-lg font-normal leading-snug group-hover:underline m-0">
+                    {path.title}
                   </h3>
-                  <p className="text-xs text-stone-500 line-clamp-2 max-w-xl leading-relaxed">
-                    {module.shortDescription}
+                  <p className="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+                    {path.shortDescription}
                   </p>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-                <div className="text-right">
-                  <span className="text-[11px] font-mono text-stone-400 block">
-                    {module.progressPercent}% Complete
+                <div className="pt-4 mt-3 border-t border-stone-200/20 flex items-center justify-between text-xs">
+                  <span className="text-stone-400 text-[11px]">
+                    {path.levelGroups.reduce((acc, curr) => acc + curr.lessons.length, 0)} Modular Lessons
+                  </span>
+                  <span
+                    className="font-serif font-medium flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+                    style={{ color: currentTone.primary }}
+                  >
+                    Enter Pathway →
                   </span>
                 </div>
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:translate-x-1"
-                  style={{
-                    backgroundColor: `${currentTone.primary}20`,
-                    color: currentTone.primary,
-                  }}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* VIEW TAB 2: LIVING INVENTORY ("LEAVE OUT NONE") ROADMAP */}
+      {activeViewTab === 'inventory' && (
+        <div className="space-y-6 animate-in fade-in">
+          {/* Search & Status Filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3.5 top-3 text-stone-400" />
+              <input
+                type="text"
+                value={inventorySearch}
+                onChange={(e) => setInventorySearch(e.target.value)}
+                placeholder="Search any tradition, path, or school... (Leave Out None)"
+                className="w-full pl-10 pr-4 py-2 rounded-2xl bg-stone-500/5 border border-stone-200/30 text-xs font-serif placeholder-stone-400 focus:outline-none"
+              />
             </div>
-          );
-        })}
-      </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={inventoryStatusFilter}
+                onChange={(e) => setInventoryStatusFilter(e.target.value)}
+                className="px-3 py-2 rounded-2xl bg-stone-500/5 border border-stone-200/30 text-xs font-serif"
+              >
+                <option value="All">All Coverage Statuses</option>
+                <option value="Live">Live (Full Curriculum)</option>
+                <option value="In Research">In Research / Drafting</option>
+                <option value="Queued">Queued for Inclusion</option>
+                <option value="Needs Expert Partner">Needs Expert Partner</option>
+              </select>
+
+              <button
+                onClick={() => setIsRequestModalOpen(true)}
+                className="px-4 py-2 rounded-2xl font-serif text-xs font-medium flex items-center gap-1.5 shrink-0 shadow-xs"
+                style={{
+                  backgroundColor: currentTone.primary,
+                  color: '#2C2520',
+                }}
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Suggest a Tradition</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Public Living Inventory Table / Cards */}
+          <div className="space-y-3">
+            <div className="text-xs font-serif text-stone-400 px-2 flex justify-between">
+              <span>Traditions Catalogued ({filteredInventory.length})</span>
+              <span>Every tradition is welcomed with academic care</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredInventory.map((item) => {
+                const statusColor =
+                  item.coverageStatus === 'Live'
+                    ? 'text-emerald-600 bg-emerald-500/10'
+                    : item.coverageStatus === 'In Research'
+                    ? 'text-amber-600 bg-amber-500/10'
+                    : item.coverageStatus === 'Needs Expert Partner'
+                    ? 'text-rose-600 bg-rose-500/10'
+                    : 'text-stone-500 bg-stone-500/10';
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-5 rounded-3xl border shadow-xs space-y-3 flex flex-col justify-between"
+                    style={{
+                      borderColor: 'rgba(232, 168, 124, 0.25)',
+                      backgroundColor: timeOfDay === 'night' ? '#2A221C' : '#FFFDFB',
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase font-serif tracking-wider text-stone-400">
+                          {item.category}
+                        </span>
+                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-medium ${statusColor}`}>
+                          {item.coverageStatus}
+                        </span>
+                      </div>
+
+                      <h4 className="font-serif text-base font-normal leading-snug m-0">
+                        {item.name}
+                      </h4>
+                      <p className="text-xs text-stone-500 leading-relaxed">
+                        {item.notes}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-stone-200/20 text-[11px] text-stone-400 flex flex-col gap-1">
+                      <div>
+                        <strong>Community Presence: </strong>
+                        <span>{item.communityPresence}</span>
+                      </div>
+                      {item.scholarlyPartnership && (
+                        <div className="text-stone-500">
+                          <strong>Academic Link: </strong>
+                          <span>{item.scholarlyPartnership}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suggest / Request a Tradition Modal */}
+      {isRequestModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        >
+          <div
+            className="w-full max-w-md rounded-3xl p-6 border shadow-2xl space-y-4"
+            style={{
+              backgroundColor: timeOfDay === 'night' ? '#2A221C' : '#FFFFFF',
+              borderColor: currentTone.primary,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-lg font-normal m-0">
+                Suggest a Tradition to Include
+              </h3>
+              <button
+                onClick={() => setIsRequestModalOpen(false)}
+                className="p-1 rounded-full hover:bg-stone-500/20"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Under our <strong>Leave Out None</strong> mandate, community submissions directly prioritize our research roadmap and scholarly outreach.
+            </p>
+
+            {requestSubmitted ? (
+              <div className="p-4 rounded-2xl bg-emerald-500/15 text-emerald-600 text-xs flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                <span>Thank you. This tradition has been queued for scholarly intake!</span>
+              </div>
+            ) : (
+              <form onSubmit={handleRequestTradition} className="space-y-3 text-xs">
+                <div>
+                  <label className="font-serif block font-medium mb-1">
+                    Tradition Name or Lineage:
+                  </label>
+                  <input
+                    type="text"
+                    value={requestedTraditionName}
+                    onChange={(e) => setRequestedTraditionName(e.target.value)}
+                    placeholder="e.g. Jainism, Yezidism, Shinto, Druidry..."
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-transparent text-xs"
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsRequestModalOpen(false)}
+                    className="px-4 py-2 rounded-full border border-stone-300 text-xs font-serif"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-full font-serif text-xs font-medium"
+                    style={{
+                      backgroundColor: currentTone.primary,
+                      color: '#2C2520',
+                    }}
+                  >
+                    Queue for Inclusion
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
