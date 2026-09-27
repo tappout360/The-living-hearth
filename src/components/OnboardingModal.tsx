@@ -7,6 +7,8 @@ import { ShieldCheck, Compass, Heart, Lock, ArrowRight, Check, KeyRound, UserChe
 
 const TRADITION_CHOICES = [
   'Christianity',
+  'Catholicism',
+  'Latter-day Saint Tradition (Mormonism)',
   'Islam',
   'Judaism',
   'Hinduism',

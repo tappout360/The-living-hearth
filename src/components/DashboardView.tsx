@@ -116,17 +116,21 @@ export const DashboardView: React.FC = () => {
 
   const traditionOptions = [
     'Christianity',
+    'Catholicism',
+    'Latter-day Saint Tradition (Mormonism)',
     'Islam',
     'Judaism',
     'Hinduism',
     'Buddhism',
+    'Sikhism',
+    'Bahá\'í Faith',
+    'Jainism',
+    'Taoism & East Asian Traditions',
+    'Shinto',
     'Celtic & Indigenous Traditions',
     'Spiritualism & Spiritism',
-    'Taoism & East Asian Traditions',
-    'Sikhism',
-    'Baha’i Faith',
     'Spiritual but not religious',
-    'Exploring',
+    'Exploring & Interfaith',
     'Prefer not to say',
   ];
 

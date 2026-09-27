@@ -265,6 +265,58 @@ export const INITIAL_ROOMS: Room[] = [
       },
     ],
   },
+  {
+    id: 'room-catholic-liturgy',
+    title: 'Catholic Contemplative & Liturgical Circle',
+    tradition: 'Catholicism',
+    description: 'Liturgy of the Hours, Eucharistic contemplation, Carmelite and Franciscan interior prayer, and living the Works of Mercy in daily life.',
+    motif: 'vesica',
+    memberCount: 142,
+    activityStatus: 'active',
+    isPrivate: false,
+    rules: [
+      'Honor the spiritual breadth of Roman and Eastern Catholic rites.',
+      'Refrain from sectarian polemics or harsh doctrinal gatekeeping.',
+      'Foster contemplative reverence and compassionate accompaniment.',
+    ],
+    recentMessages: [
+      {
+        id: 'msg-catholic-1',
+        senderName: 'Sister Claire',
+        isAnonymous: false,
+        content: '“Lord, make me an instrument of your peace.” Praying Evening Vespers for caregivers and those experiencing illness tonight.',
+        timestamp: '25 min ago',
+        mode: 'Practice',
+        traditionTag: 'Liturgy of the Hours',
+      },
+    ],
+  },
+  {
+    id: 'room-mormon-covenants',
+    title: 'Latter-day Saint & Restoration Circle',
+    tradition: 'Latter-day Saint Tradition',
+    description: 'Quiet study of the Restoration, living covenantal discipleship, family history and eternal kinship, and Christ-centered ministering.',
+    motif: 'rings',
+    memberCount: 98,
+    activityStatus: 'glowing',
+    isPrivate: false,
+    rules: [
+      'Center on discipleship in Jesus Christ and mutual spiritual uplift.',
+      'Respectful dialogue welcoming seekers and all Restoration lineages.',
+      'No proselytizing pressure or argumentative debate.',
+    ],
+    recentMessages: [
+      {
+        id: 'msg-lds-1',
+        senderName: 'Elder Thomas',
+        isAnonymous: false,
+        content: 'Reflecting on 2 Nephi 26:33: “He inviteth them all to come unto him and partake of his goodness... and all are alike unto God.” Peace to all seeking sanctuary today.',
+        timestamp: '40 min ago',
+        mode: 'Learning',
+        traditionTag: 'Restoration Scripture',
+      },
+    ],
+  },
 ];
 
 export const INITIAL_PRAYERS: PrayerIntention[] = [
@@ -449,6 +501,44 @@ export const INITIAL_LEARNING_MODULES: LearningModule[] = [
       {
         heading: 'Gratitude as First Law',
         body: 'In traditional ecological knowledge, gratitude is not a pleasant emotional afterthought, but a binding moral covenant. You take only what you need, never the first or last, and you give back in care.',
+      },
+    ],
+  },
+  {
+    id: 'learn-catholic-sacramentality',
+    title: 'The Sacramental Imagination: Grace in the Material World',
+    tradition: 'Catholicism',
+    shortDescription: 'How the Catholic vision perceives creation and human embodiment as sacred conduits of divine encounter and transformation.',
+    timeEstimate: '11 min reading',
+    progressPercent: 0,
+    scholarlyCitation: 'Father Andrew Greeley, “The Catholic Imagination” & Rev. Richard Rohr, OFM, “The Universal Christ.”',
+    contentSections: [
+      {
+        heading: 'Creation as Carrier of the Divine',
+        body: 'In Catholic sacramental theology, water, bread, wine, oil, touch, and human voice do not merely symbolize abstract ideas; they are efficacious vehicles through which the living God communicates holiness to physical, embodied beings.',
+      },
+      {
+        heading: 'The Liturgical Rhythm of Time',
+        body: 'Through the Liturgy of the Hours and the annual liturgical calendar, ordinary seconds and seasons are sanctified, transforming daily routine into an unbroken pilgrimage of grace.',
+      },
+    ],
+  },
+  {
+    id: 'learn-lds-eternal-covenants',
+    title: 'Eternal Families & Continuing Revelation: Latter-day Saint Theology',
+    tradition: 'Latter-day Saint Tradition',
+    shortDescription: 'Explore the theology of ongoing prophetic guidance, the premortal origin of souls, and the sacred continuity of love across eternity.',
+    timeEstimate: '12 min reading',
+    progressPercent: 0,
+    scholarlyCitation: 'Prof. Terryl L. Givens, “Wrestling the Angel: The Foundations of Mormon Thought.” Oxford University Press.',
+    contentSections: [
+      {
+        heading: 'An Open Heaven and Personal Inspiration',
+        body: 'A core tenet of the Restoration is that revelation did not cease with the ancient apostles. God speaks continuously through living prophets, scripture, and directly to the spiritual faculty of every individual seeker.',
+      },
+      {
+        heading: 'The Sacred Architecture of Eternal Kinship',
+        body: 'Latter-day Saint temple covenants reveal a theological commitment to generational continuity: the conviction that love, family bonds, and personal identity are not terminated by physical death, but sealed for all eternity.',
       },
     ],
   },

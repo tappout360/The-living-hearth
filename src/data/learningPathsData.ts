@@ -1084,11 +1084,243 @@ export const COMPREHENSIVE_LEARNING_PATHS: ComprehensiveLearningPath[] = [
       },
     ],
   },
+  // 13. Catholicism
+  {
+    id: 'path-catholicism',
+    title: 'Catholicism: Sacred Tradition, Sacraments & Global Communion',
+    tradition: 'Catholicism',
+    category: 'Abrahamic & Related',
+    shortDescription: 'Explore the sacramental worldview, apostolic continuity, contemplative monastic lineages, Catholic Social Teaching, and global liturgical expressions of the Roman and Eastern Catholic Churches.',
+    learningOutcomes: [
+      'Comprehend the seven sacraments as outward signs of inward grace, with the Eucharist as "source and summit".',
+      'Articulate the relationship between Scripture, Sacred Tradition, and the Magisterium, including developments of Vatican II.',
+      'Trace contemplative monastic lineages (Benedictine, Carmelite, Franciscan, and Ignatian).',
+      'Analyze Catholic Social Teaching (human dignity, solidarity, subsidiarity, and care for creation).',
+      'Recognize the liturgical and cultural diversity of the 23 Eastern Catholic Churches in full communion with Rome.',
+    ],
+    lastScholarlyReviewDate: 'September 2026',
+    coverageStatus: 'Live',
+    scholarlyCitations: [
+      'Prof. Lawrence S. Cunningham, "An Introduction to Catholicism." Cambridge University Press.',
+      'Avery Cardinal Dulles, S.J., "Models of the Church." Image Books.',
+      'Prof. Elizabeth A. Johnson, CSJ, "Truly Our Sister: A Theology of Mary in the Communion of Saints." Continuum.',
+      'Documents of the Second Vatican Council (Lumen Gentium, Gaudium et Spes, Nostra Aetate).',
+    ],
+    comparativePairs: {
+      partnerTradition: 'Buddhism & Catholic Mysticism',
+      sharedPrinciple: 'Contemplative Stillness & Interior Freedom',
+      traditionAPerspective: 'Apophatic Prayer & The Dark Night of the Soul (St. John of the Cross): Surrendering mental images to rest directly in uncreated divine love.',
+      traditionBPerspective: 'Vipassanā & Śūnyatā: Disidentifying with ego-attachments and abiding in luminous, unconditioned open awareness.',
+      intersectionInsight: 'Both traditions observe that releasing mental chatter and self-preoccupation is essential for encountering ultimate spiritual reality.',
+    },
+    levelGroups: [
+      {
+        level: 'Beginner',
+        estimatedTime: '2.5–3 hours',
+        lessons: [
+          {
+            id: 'catholic-b1',
+            title: 'The Sacramental Principle & The Seven Sacraments',
+            estimatedMinutes: 40,
+            summary: 'The theological conviction that the physical creation is capable of bearing divine grace. Overview of the seven sacraments: Baptism, Confirmation, Eucharist, Penance/Reconciliation, Anointing of the Sick, Holy Orders, and Matrimony.',
+            internalDiversityNotes: 'Highlights the Eastern Catholic emphasis on the divine mysteries (Mysterion) and the Western scholastic definitions.',
+            comparativeLinks: ['Eastern Orthodox Mysteries', 'Anglican Sacramentalism'],
+          },
+          {
+            id: 'catholic-b2',
+            title: 'Scripture, Sacred Tradition & Apostolic Continuity',
+            estimatedMinutes: 35,
+            summary: 'The single deposit of faith (*depositum fidei*) transmitted through living apostolic succession, the role of the Bishop of Rome (Papacy), and the authority of Ecumenical Councils from Nicaea to Vatican II.',
+            internalDiversityNotes: 'Examines balance between papal primacy and the synodality / collegiality of bishops emphasized in contemporary reform.',
+          },
+          {
+            id: 'catholic-b3',
+            title: 'The Liturgical Cycle & The Mass',
+            estimatedMinutes: 35,
+            summary: 'The architecture of the Eucharistic Liturgy (Liturgy of the Word and Liturgy of the Eucharist) and the sacred rhythm of the liturgical calendar (Advent, Christmas, Lent, Triduum, Easter, and Ordinary Time).',
+            internalDiversityNotes: 'Explains the Ordinary Form of the Roman Rite, the Extraordinary Form (Latin Mass), and the diverse liturgical languages.',
+          },
+          {
+            id: 'catholic-b4',
+            title: 'Communion of Saints & Mary the Theotokos',
+            estimatedMinutes: 30,
+            summary: 'The mystical unity of believers on earth, in purgatory, and in heaven. Marian dogmas (Mother of God, Immaculate Conception, Assumption) and cultural inculturation across world continents (Our Lady of Guadalupe, Kibeho, Lourdes).',
+            internalDiversityNotes: 'Carefully distinguishes prayerful intercession (*dulia/hyperdulia*) from worship due solely to God (*latria*).',
+          },
+        ],
+      },
+      {
+        level: 'Intermediate',
+        estimatedTime: '3.5–4 hours',
+        lessons: [
+          {
+            id: 'catholic-i1',
+            title: 'Monastic Lineages & Contemplative Schools',
+            estimatedMinutes: 45,
+            summary: 'Historical and spiritual diversity of Catholic orders: Benedictine stability and Lectio Divina; Franciscan fraternal poverty and love of creation; Dominican search for truth (*Veritas*); Carmelite interior mysticism; and Ignatian contemplation in action.',
+            internalDiversityNotes: 'Shows how distinct charisms provide divergent spiritual temperaments within the same Catholic communion.',
+          },
+          {
+            id: 'catholic-i2',
+            title: 'Catholic Social Teaching & Human Dignity',
+            estimatedMinutes: 45,
+            summary: 'The moral tradition addressing socioeconomic justice from Leo XIII’s *Rerum Novarum* (1891) to Francis’s *Laudato si’* (2015). Core pillars: the inviolable dignity of the human person, the common good, subsidiarity, solidarity, and the preferential option for the poor.',
+            internalDiversityNotes: 'Explores diverse political engagements across North America, European Christian democracy, and Latin American liberation theology.',
+          },
+          {
+            id: 'catholic-i3',
+            title: 'The 23 Eastern Catholic Churches & Global Liturgical Families',
+            estimatedMinutes: 40,
+            summary: 'The rich heritage of Eastern Catholic Churches (Byzantine, Maronite, Melkite, Ukrainian, Syro-Malabar, Coptic) in full communion with the Pope, preserving their ancient Eastern liturgical rites, canons, theology, and married priesthood.',
+            internalDiversityNotes: 'Counteracts the misconception that the Catholic Church is solely Latin or Western.',
+          },
+        ],
+      },
+      {
+        level: 'Deeper Exploration',
+        estimatedTime: 'Ongoing study',
+        lessons: [
+          {
+            id: 'catholic-d1',
+            title: 'Vatican II, Ecumenism & Interfaith Horizons (*Nostra Aetate*)',
+            estimatedMinutes: 50,
+            summary: 'The dramatic renewal of the Second Vatican Council (1962–1965), opening new avenues of dialogue with modern culture, Jewish-Christian rapprochement, universal respect for non-Christian world religions, and Karl Rahner’s theology of universal grace.',
+            internalDiversityNotes: 'Traces ongoing post-conciliar discussions between traditionalist, reformist, and intercultural perspectives.',
+          },
+        ],
+      },
+    ],
+  },
+  // 14. Latter-day Saint Tradition (Mormonism)
+  {
+    id: 'path-latter-day-saints',
+    title: 'Latter-day Saint Tradition: Restoration, Scripture & Eternal Covenants',
+    tradition: 'Latter-day Saint Tradition',
+    category: 'Abrahamic & Related',
+    shortDescription: 'Examine the 19th-century origins, scriptural canon, theology of continuing revelation, eternal family bonds, temple ordinances, and global community life of the Latter-day Saint and Restoration movements.',
+    learningOutcomes: [
+      'Explain the 19th-century American religious context of the Restoration and Joseph Smith’s First Vision.',
+      'Identify the four scriptural standard works: the Holy Bible, Book of Mormon, Doctrine & Covenants, and Pearl of Great Price.',
+      'Describe the Plan of Salvation: premortal life, mortality, spirit world, and degrees of glory.',
+      'Analyze the theology of temple ordinances, vicarious service, and the sealing of eternal families.',
+      'Recognize the diverse branches of the Restoration (including Community of Christ) and contemporary worldwide presence.',
+    ],
+    lastScholarlyReviewDate: 'September 2026',
+    coverageStatus: 'Live',
+    scholarlyCitations: [
+      'Prof. Richard Lyman Bushman, "Joseph Smith: Rough Stone Rolling." Alfred A. Knopf.',
+      'Prof. Terryl L. Givens and Philip L. Barlow (eds.), "The Oxford Handbook of Mormonism." Oxford University Press.',
+      'Prof. Laurel Thatcher Ulrich, "A House Full of Females: Plural Marriage and Women\'s Rights in Early Mormonism." Knopf.',
+      'Prof. David J. Howlett, "Kirtland Temple: The Biography of a Shared Mormon Sacred Space." University of Illinois Press.',
+    ],
+    comparativePairs: {
+      partnerTradition: 'Eastern Orthodoxy & Latter-day Saint Tradition',
+      sharedPrinciple: 'Theosis / Deification & Divine Kinship',
+      traditionAPerspective: 'Orthodox Theosis: Partaking of uncreated divine energies to become by grace what God is by nature, through sacraments, prayer, and ascetic contemplation.',
+      traditionBPerspective: 'Latter-day Saint Eternal Progression: Literal spiritual children of heavenly parents who, through Christ\'s atonement and covenants, grow line upon line into eternal godliness.',
+      intersectionInsight: 'Both traditions reject Western forensic minimalism, envisioning human redemption not merely as legal acquittal from guilt, but as glorious participatory transformation in divine life.',
+    },
+    levelGroups: [
+      {
+        level: 'Beginner',
+        estimatedTime: '2.5–3 hours',
+        lessons: [
+          {
+            id: 'lds-b1',
+            title: 'The 19th-Century Matrix & The First Vision',
+            estimatedMinutes: 40,
+            summary: 'The Second Great Awakening in upstate New York; Joseph Smith’s 1820 prayer in the Sacred Grove; the foundational theological claim of the Restoration of the primitive Christian church with prophetic priesthood authority.',
+            internalDiversityNotes: 'Presents both the multiple historical accounts of the First Vision and the perspectives of secular religious historians.',
+            comparativeLinks: ['American Frontier Religion', 'Restoration Movement'],
+          },
+          {
+            id: 'lds-b2',
+            title: 'An Open Scriptural Canon: The Book of Mormon & Modern Revelation',
+            estimatedMinutes: 35,
+            summary: 'The coming forth and narrative structure of the Book of Mormon as another testament of Jesus Christ; the principle of continuing, open-ended revelation embodied in the Doctrine & Covenants.',
+            internalDiversityNotes: 'Explains different views on translation (literal ancient record vs. inspired prophetic midrash) within LDS scholarship.',
+          },
+          {
+            id: 'lds-b3',
+            title: 'The Godhead & The Eternal Nature of Humanity',
+            estimatedMinutes: 35,
+            summary: 'Latter-day Saint departure from classical Nicene theology: God the Father, His Son Jesus Christ, and the Holy Ghost as three distinct, embodied (Father and Son), and harmonious individuals; the belief in Heavenly Parents and human divine heritage.',
+            internalDiversityNotes: 'Contrasts materialist ontology (spirit is refined matter) with classical Christian immaterialism.',
+          },
+          {
+            id: 'lds-b4',
+            title: 'The Plan of Salvation: From Premortality to Eternal Life',
+            estimatedMinutes: 35,
+            summary: 'The journey of the human soul: premortal existence with God, the necessity of mortal embodiment and free agency, Christ’s infinite atonement in Gethsemane and on the cross, the post-mortal spirit world, and the three kingdoms of glory (Celestial, Terrestrial, Telestial).',
+            internalDiversityNotes: 'Highlights the optimistic universalist undertones: outer darkness is reserved only for a miniscule few who knowingly reject light.',
+          },
+        ],
+      },
+      {
+        level: 'Intermediate',
+        estimatedTime: '3.5–4 hours',
+        lessons: [
+          {
+            id: 'lds-i1',
+            title: 'Temple Ordinances & The Sealing of Eternal Families',
+            estimatedMinutes: 45,
+            summary: 'The distinction between weekly meetinghouse chapels and sacred temples; the sacred ordinances of the Endowment, baptism for the deceased, and eternal marriage sealings connecting generational family lines for eternity.',
+            internalDiversityNotes: 'Examines the theological commitment to universal vicarious proxy work as an expression of love leaving no soul behind.',
+          },
+          {
+            id: 'lds-i2',
+            title: 'Lay Ministry, The Relief Society & Worldwide Humanitarian Service',
+            estimatedMinutes: 45,
+            summary: 'The unpaid lay ministry structuring local wards and stakes; the historic role of the Relief Society (established in 1842, one of the oldest women\'s societies in the world); the massive worldwide welfare system, bishops\' storehouses, and global humanitarian aid.',
+            internalDiversityNotes: 'Discusses women’s leadership, ministerial evolution, and global cultural adaptations across Latin America, the Pacific, and Africa.',
+          },
+          {
+            id: 'lds-i3',
+            title: 'Restoration Diaspora: Community of Christ & Internal Pluralism',
+            estimatedMinutes: 40,
+            summary: 'The succession crisis of 1844 following Joseph Smith’s martyrdom; the westward migration to Utah led by Brigham Young vs. the Midwestern continuity of the Reorganized Church (now Community of Christ) with its focus on peace, justice, and women’s ordination.',
+            internalDiversityNotes: 'Demonstrates that the Restoration tradition is a multifaceted religious family rather than a single monolith.',
+          },
+        ],
+      },
+      {
+        level: 'Deeper Exploration',
+        estimatedTime: 'Ongoing study',
+        lessons: [
+          {
+            id: 'lds-d1',
+            title: 'Theology of Eternal Progression & Global Horizons',
+            estimatedMinutes: 50,
+            summary: 'The King Follett Discourse and the doctrine of eternal progression (*As man now is, God once was; as God now is, man may be*); comparative theological links with ancient Christian deification (*theosis*); the rapid shift into an international majority outside the United States.',
+            internalDiversityNotes: 'Explores scholarly discussions on race, historical memory, and theological pluralism within modern Latter-day Saint studies.',
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 // The Living Inventory of Traditions — "Leave Out None" Mandate
 export const LIVING_INVENTORY_TRADITIONS: LivingInventoryEntry[] = [
   // Abrahamic & Related
+  {
+    id: 'inv-catholicism',
+    name: 'Catholicism (Roman Catholic & 23 Eastern Catholic Rites)',
+    category: 'Abrahamic & Related',
+    coverageStatus: 'Live',
+    notes: 'Comprehensive 3-level path live covering sacraments, monastic contemplation, Catholic Social Teaching, and Eastern Catholic rites.',
+    communityPresence: 'Global (~1.38 billion)',
+    scholarlyPartnership: 'Pontifical Gregorian University & Notre Dame Theology',
+  },
+  {
+    id: 'inv-latter-day-saints',
+    name: 'The Church of Jesus Christ of Latter-day Saints & Restoration Traditions',
+    category: 'Abrahamic & Related',
+    coverageStatus: 'Live',
+    notes: 'Comprehensive 3-level path live covering Restoration scripture, open canon, Plan of Salvation, eternal covenants, and Community of Christ.',
+    communityPresence: 'Global (~17.2 million)',
+    scholarlyPartnership: 'Claremont Graduate University & BYU Religious Studies',
+  },
   {
     id: 'inv-judaism',
     name: 'Judaism (Rabbinic, Hasidic, Conservative, Reform, Reconstructionist)',
