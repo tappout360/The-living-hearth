@@ -15,6 +15,8 @@ import {
   PhoneCall,
   X,
   Globe,
+  Mail,
+  WifiOff,
 } from 'lucide-react';
 import type { HearthTone, TimeOfDay } from '../types';
 
@@ -32,12 +34,16 @@ export const Header: React.FC = () => {
     setIsOnboardingOpen,
     isLanguageModalOpen,
     setIsLanguageModalOpen,
+    invitations,
+    setIsInvitationsModalOpen,
+    isOnline,
   } = useHearth();
 
   const [isA11yOpen, setIsA11yOpen] = useState(false);
   const [isHipaaInfoOpen, setIsHipaaInfoOpen] = useState(false);
   const [isTonePickerOpen, setIsTonePickerOpen] = useState(false);
 
+  const pendingInvitesCount = invitations.filter((i) => i.status === 'pending').length;
   const currentTone = HEARTH_TONES[hearthTone];
   const activeLangConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
 
@@ -109,6 +115,44 @@ export const Header: React.FC = () => {
               <Globe className="w-3.5 h-3.5 text-amber-500" />
               <span className="text-[11px] font-serif">{activeLangConfig.nativeName}</span>
             </button>
+
+            {/* Invitations & Connections Trigger */}
+            <button
+              onClick={() => setIsInvitationsModalOpen(true)}
+              className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all"
+              style={{
+                borderColor: currentTone.primary,
+                backgroundColor: timeOfDay === 'night' ? '#3B332B' : '#FFFFFF',
+                color: timeOfDay === 'night' ? '#F9F4EF' : '#2C2520',
+              }}
+              title="Invitations & Circle Connections"
+              aria-label={`Invitations. ${pendingInvitesCount} pending.`}
+            >
+              <Mail className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-[11px] font-serif hidden md:inline">Invites</span>
+              {pendingInvitesCount > 0 && (
+                <span
+                  className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold leading-tight"
+                  style={{
+                    backgroundColor: currentTone.primary,
+                    color: '#2C2520',
+                  }}
+                >
+                  {pendingInvitesCount}
+                </span>
+              )}
+            </button>
+
+            {/* Offline Mode Indicator */}
+            {!isOnline && (
+              <div
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono bg-amber-500/20 text-amber-600 border border-amber-500/40"
+                title="Working offline. Changes saved locally to your encrypted vault."
+              >
+                <WifiOff className="w-3.5 h-3.5 animate-pulse" />
+                <span className="hidden lg:inline">Offline Vault</span>
+              </div>
+            )}
 
             {/* Ambient Audio Bar */}
             <AmbientAudioBar />

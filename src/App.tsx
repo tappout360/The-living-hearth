@@ -8,6 +8,8 @@ import { LearningView } from './components/LearningView';
 import { ProfileSafetyView } from './components/ProfileSafetyView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { PrayComposerModal } from './components/PrayComposerModal';
+import { InvitationsModal } from './components/InvitationsModal';
+import { PrayerDetailModal } from './components/PrayerDetailModal';
 import { LivingLightField } from './components/LivingLightField';
 import { SUPPORTED_LANGUAGES } from './i18n/languages';
 import './App.css';
@@ -81,6 +83,8 @@ const MainSanctuary: React.FC = () => {
       <Navigation />
       <OnboardingModal />
       <PrayComposerModal />
+      <InvitationsModal />
+      <PrayerDetailModal />
     </div>
   );
 };

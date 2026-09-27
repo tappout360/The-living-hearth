@@ -9,47 +9,112 @@ import type {
   ComplianceState,
   Room,
   PrayerIntention,
+  PrayerResponse,
+  Invitation,
+  InvitationPreferences,
+  TraditionFilterScope,
+  UserFaithProfile,
   LearningModule,
 } from '../types';
-import { HEARTH_TONES, INITIAL_ROOMS, INITIAL_PRAYERS, INITIAL_LEARNING_MODULES } from '../data/mockData';
+import {
+  HEARTH_TONES,
+  INITIAL_ROOMS,
+  INITIAL_PRAYERS,
+  INITIAL_INVITATIONS,
+  INITIAL_LEARNING_MODULES,
+} from '../data/mockData';
 import { UI_TRANSLATIONS, SUPPORTED_LANGUAGES } from '../i18n/languages';
 import { ambientAudio } from '../audio/ambientAudioEngine';
 
 interface HearthContextType {
+  // Lighting & Theme
   timeOfDay: TimeOfDay;
   setTimeOfDay: (time: TimeOfDay) => void;
   isAutoTime: boolean;
   setIsAutoTime: (auto: boolean) => void;
   hearthTone: HearthTone;
   setHearthTone: (tone: HearthTone) => void;
+
+  // Language & Translation
   currentLanguage: LanguageCode;
   setCurrentLanguage: (lang: LanguageCode) => void;
   t: (key: string) => string;
+
+  // Atmosphere & Audio
   ambientSettings: AmbientAudioSettings;
   setAmbientSettings: React.Dispatch<React.SetStateAction<AmbientAudioSettings>>;
   visualSettings: VisualAtmosphereSettings;
   setVisualSettings: React.Dispatch<React.SetStateAction<VisualAtmosphereSettings>>;
+
+  // Accessibility
   accessibility: AccessibilitySettings;
   setAccessibility: React.Dispatch<React.SetStateAction<AccessibilitySettings>>;
+
+  // Navigation & Tabs
   activeTab: 'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile';
   setActiveTab: (tab: 'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile') => void;
+
+  // User Profile & Religion Focus
+  userProfile: UserFaithProfile;
+  setUserProfile: React.Dispatch<React.SetStateAction<UserFaithProfile>>;
+  updateDisplayName: (name: string) => void;
+  updatePrimaryTradition: (tradition: string) => void;
+  toggleSecondaryTradition: (tradition: string) => void;
+  toggleSameTraditionOnly: (enabled?: boolean) => void;
+  setSameTraditionScope: (scope: TraditionFilterScope) => void;
+  dismissReflection: () => void;
+
+  // Rooms
   rooms: Room[];
   selectedRoomId: string | null;
   setSelectedRoomId: (id: string | null) => void;
   addRoomMessage: (roomId: string, content: string, mode: 'Practice' | 'Learning' | 'Discussion', isAnonymous: boolean) => void;
+
+  // Prayers / Intentions
   prayers: PrayerIntention[];
-  addPrayer: (prayer: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage'>) => void;
+  addPrayer: (prayer: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>) => { queued: boolean; error?: string };
+  activePrayerDetail: PrayerIntention | null;
+  setActivePrayerDetail: (prayer: PrayerIntention | null) => void;
+  respondToPrayer: (prayerId: string, content: string, isAnonymous: boolean, visibility: 'private_to_sender' | 'room_visible') => void;
+  mutePrayerSender: (sender: string) => void;
+  mutedSenders: string[];
+  blockedUsers: string[];
+  blockUser: (user: string) => void;
+  unblockUser: (user: string) => void;
+  prayerRequestsEnabled: boolean;
+  setPrayerRequestsEnabled: (enabled: boolean) => void;
+
+  // Invitations
+  invitations: Invitation[];
+  sendInvitation: (invitation: Omit<Invitation, 'id' | 'timestamp' | 'status' | 'sourceLanguage'>) => { success: boolean; reason?: string };
+  respondToInvitation: (invitationId: string, action: 'accept' | 'decline' | 'mute' | 'report') => void;
+  invitationPreferences: InvitationPreferences;
+  setInvitationPreferences: React.Dispatch<React.SetStateAction<InvitationPreferences>>;
+  isInvitationsModalOpen: boolean;
+  setIsInvitationsModalOpen: (open: boolean) => void;
+
+  // Learning Modules
   learningModules: LearningModule[];
   selectedLearningId: string | null;
   setSelectedLearningId: (id: string | null) => void;
+
+  // Safety & HIPAA
   compliance: ComplianceState;
   scanForPhiAndSafety: (text: string) => { hasPhi: boolean; hasSolicitation: boolean; advice: string | null };
+
+  // Modals & UI States
   isOnboardingOpen: boolean;
   setIsOnboardingOpen: (open: boolean) => void;
   isPrayComposerOpen: boolean;
   setIsPrayComposerOpen: (open: boolean) => void;
   isLanguageModalOpen: boolean;
   setIsLanguageModalOpen: (open: boolean) => void;
+
+  // Offline Resilience
+  isOnline: boolean;
+  offlineQueueCount: number;
+
+  // Data Sovereignty
   exportUserData: () => void;
   purgeUserData: () => void;
 }
@@ -85,6 +150,20 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [hearthTone, setHearthTone] = useState<HearthTone>('ember');
   const [currentLanguage, setCurrentLanguageState] = useState<LanguageCode>('en');
 
+  // Network online/offline status
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Ambient sound state
   const [ambientSettings, setAmbientSettings] = useState<AmbientAudioSettings>({
     isEnabled: false,
@@ -108,19 +187,161 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile'>('dashboard');
-  const [rooms, setRooms] = useState<Room[]>(
-    INITIAL_ROOMS.map((r) => ({
+
+  // User Faith Profile
+  const [userProfile, setUserProfile] = useState<UserFaithProfile>(() => {
+    const saved = localStorage.getItem('hearth_user_profile');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {
+      displayName: 'Jason',
+      showNameInPublicRooms: false,
+      primaryTradition: 'Christianity',
+      secondaryTraditions: ['Buddhism', 'Celtic & Indigenous Traditions'],
+      sameTraditionOnly: false,
+      sameTraditionScope: 'both',
+      hasSeenTraditionFilterNotice: false,
+      isReflectionDismissed: false,
+    };
+  });
+
+  // Persist userProfile changes
+  useEffect(() => {
+    localStorage.setItem('hearth_user_profile', JSON.stringify(userProfile));
+  }, [userProfile]);
+
+  const updateDisplayName = (name: string) => {
+    setUserProfile((prev) => ({ ...prev, displayName: name.trim() || 'Hearth Companion' }));
+  };
+
+  const updatePrimaryTradition = (tradition: string) => {
+    setUserProfile((prev) => ({ ...prev, primaryTradition: tradition }));
+  };
+
+  const toggleSecondaryTradition = (tradition: string) => {
+    setUserProfile((prev) => {
+      const exists = prev.secondaryTraditions.includes(tradition);
+      return {
+        ...prev,
+        secondaryTraditions: exists
+          ? prev.secondaryTraditions.filter((t) => t !== tradition)
+          : [...prev.secondaryTraditions, tradition],
+      };
+    });
+  };
+
+  const toggleSameTraditionOnly = (enabled?: boolean) => {
+    setUserProfile((prev) => ({
+      ...prev,
+      sameTraditionOnly: enabled !== undefined ? enabled : !prev.sameTraditionOnly,
+      hasSeenTraditionFilterNotice: true,
+    }));
+  };
+
+  const setSameTraditionScope = (scope: TraditionFilterScope) => {
+    setUserProfile((prev) => ({ ...prev, sameTraditionScope: scope }));
+  };
+
+  const dismissReflection = () => {
+    setUserProfile((prev) => ({ ...prev, isReflectionDismissed: true }));
+  };
+
+  // Rooms
+  const [rooms, setRooms] = useState<Room[]>(() => {
+    const saved = localStorage.getItem('hearth_rooms');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_ROOMS.map((r) => ({
       ...r,
       atmosphereProfile: r.motif === 'circle' ? 'contemplative' : r.motif === 'rings' ? 'nature' : 'study',
       recentMessages: r.recentMessages.map((m) => ({ ...m, sourceLanguage: 'en' })),
-    }))
-  );
+    }));
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_rooms', JSON.stringify(rooms));
+  }, [rooms]);
+
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [prayers, setPrayers] = useState<PrayerIntention[]>(
-    INITIAL_PRAYERS.map((p) => ({ ...p, sourceLanguage: 'en' }))
-  );
+
+  // Prayers
+  const [prayers, setPrayers] = useState<PrayerIntention[]>(() => {
+    const saved = localStorage.getItem('hearth_prayers');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_PRAYERS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_prayers', JSON.stringify(prayers));
+  }, [prayers]);
+
+  const [activePrayerDetail, setActivePrayerDetail] = useState<PrayerIntention | null>(null);
+
+  // Blocked users & muted senders
+  const [blockedUsers, setBlockedUsers] = useState<string[]>(['blocked_spam_user']);
+  const [mutedSenders, setMutedSenders] = useState<string[]>([]);
+  const [prayerRequestsEnabled, setPrayerRequestsEnabled] = useState<boolean>(true);
+
+  const blockUser = (user: string) => {
+    setBlockedUsers((prev) => (prev.includes(user) ? prev : [...prev, user]));
+  };
+
+  const unblockUser = (user: string) => {
+    setBlockedUsers((prev) => prev.filter((u) => u !== user));
+  };
+
+  const mutePrayerSender = (sender: string) => {
+    setMutedSenders((prev) => (prev.includes(sender) ? prev : [...prev, sender]));
+  };
+
+  // Invitations
+  const [invitations, setInvitations] = useState<Invitation[]>(() => {
+    const saved = localStorage.getItem('hearth_invitations');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_INVITATIONS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_invitations', JSON.stringify(invitations));
+  }, [invitations]);
+
+  const [invitationPreferences, setInvitationPreferences] = useState<InvitationPreferences>({
+    policy: 'all',
+    allowRoomInvites: true,
+    allowPrayerInvites: true,
+    allowConnectionRequests: true,
+    allowLearningShares: true,
+  });
+
+  const [isInvitationsModalOpen, setIsInvitationsModalOpen] = useState(false);
+
+  // Learning Modules
   const [learningModules, setLearningModules] = useState<LearningModule[]>(INITIAL_LEARNING_MODULES);
   const [selectedLearningId, setSelectedLearningId] = useState<string | null>(null);
+
+  // Modals
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [isPrayComposerOpen, setIsPrayComposerOpen] = useState<boolean>(false);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState<boolean>(false);
@@ -131,6 +352,9 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     trackersBlockedCount: 0,
     encryptionStatus: 'AES-256-LocalVault',
   });
+
+  // Offline queue count
+  const offlineQueueCount = prayers.filter((p) => p.queuedOffline).length;
 
   // Language setter with document dir & lang update
   const setCurrentLanguage = (lang: LanguageCode) => {
@@ -168,7 +392,6 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (accessibility.reducedMotion) {
       document.body.classList.add('reduced-motion');
-      // Dim ambient sound if reduced motion is requested
       ambientAudio.fadeForInteraction(true);
     } else {
       document.body.classList.remove('reduced-motion');
@@ -185,6 +408,54 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }
   }, [selectedRoomId, ambientSettings.isEnabled, rooms]);
+
+  // Deep linking and global keyboard shortcuts
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#/', '');
+      if (hash.startsWith('room/')) {
+        const id = hash.replace('room/', '');
+        setSelectedRoomId(id);
+        setActiveTab('rooms');
+      } else if (hash.startsWith('learn/')) {
+        const id = hash.replace('learn/', '');
+        setSelectedLearningId(id);
+        setActiveTab('learn');
+      } else if (hash === 'pray') {
+        setIsPrayComposerOpen(true);
+      } else if (hash === 'invitations') {
+        setIsInvitationsModalOpen(true);
+      } else if (['dashboard', 'rooms', 'pray', 'learn', 'profile'].includes(hash)) {
+        setActiveTab(hash as any);
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Key 'p' or Ctrl+P opens prayer composer if not focused in an input
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      if (!isInput && (e.key === 'p' || e.key === 'P') && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setIsPrayComposerOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setIsPrayComposerOpen(false);
+        setIsLanguageModalOpen(false);
+        setIsInvitationsModalOpen(false);
+        setActivePrayerDetail(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // PHI & Anti-solicitation scanner
   const scanForPhiAndSafety = (text: string) => {
@@ -205,7 +476,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addRoomMessage = (roomId: string, content: string, mode: 'Practice' | 'Learning' | 'Discussion', isAnonymous: boolean) => {
     const newMessage = {
       id: `msg-${Date.now()}`,
-      senderName: isAnonymous ? 'Hearth Companion (Anonymous)' : 'You',
+      senderName: isAnonymous ? 'Hearth Companion (Anonymous)' : userProfile.displayName,
       isAnonymous,
       content,
       sourceLanguage: currentLanguage,
@@ -217,14 +488,118 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
-  const addPrayer = (prayerData: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage'>) => {
+  const addPrayer = (prayerData: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>) => {
+    // Check if recipient has blocked sender or turned off requests
+    if (prayerData.destinationType === 'person' && prayerData.recipientName) {
+      const rec = prayerData.recipientName.trim().toLowerCase();
+      if (blockedUsers.some((u) => u.toLowerCase() === rec)) {
+        return { queued: false, error: 'Notice: This companion is currently not receiving direct intentions.' };
+      }
+      if (rec === 'quiet_practitioner') {
+        return { queued: false, error: 'Notice: Recipient has disabled direct prayer requests in their sanctuary settings.' };
+      }
+    }
+
+    const isOfflineMode = !navigator.onLine;
+
     const newPrayer: PrayerIntention = {
       ...prayerData,
       id: `prayer-${Date.now()}`,
       sourceLanguage: currentLanguage,
-      timestamp: 'Just now',
+      senderName: userProfile.displayName,
+      timestamp: isOfflineMode ? 'Saved offline (will sync)' : 'Just now',
+      queuedOffline: isOfflineMode,
+      responses: [],
     };
+
     setPrayers((prev) => [newPrayer, ...prev]);
+    return { queued: isOfflineMode };
+  };
+
+  const respondToPrayer = (
+    prayerId: string,
+    content: string,
+    isAnonymous: boolean,
+    visibility: 'private_to_sender' | 'room_visible'
+  ) => {
+    const newResponse: PrayerResponse = {
+      id: `resp-${Date.now()}`,
+      responderName: isAnonymous ? 'Compassionate Companion' : userProfile.displayName,
+      content,
+      timestamp: 'Just now',
+      sourceLanguage: currentLanguage,
+      isAnonymous,
+      visibility,
+    };
+
+    setPrayers((prev) =>
+      prev.map((p) => {
+        if (p.id === prayerId) {
+          return {
+            ...p,
+            responses: [...(p.responses || []), newResponse],
+          };
+        }
+        return p;
+      })
+    );
+
+    if (activePrayerDetail && activePrayerDetail.id === prayerId) {
+      setActivePrayerDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              responses: [...(prev.responses || []), newResponse],
+            }
+          : null
+      );
+    }
+  };
+
+  const sendInvitation = (invData: Omit<Invitation, 'id' | 'timestamp' | 'status' | 'sourceLanguage'>) => {
+    // Validation: Check blocked list
+    if (blockedUsers.some((u) => u.toLowerCase() === invData.recipientName.toLowerCase())) {
+      return { success: false, reason: 'Unable to deliver invitation to this companion.' };
+    }
+
+    const newInv: Invitation = {
+      ...invData,
+      id: `inv-${Date.now()}`,
+      timestamp: 'Just now',
+      status: 'pending',
+      sourceLanguage: currentLanguage,
+    };
+
+    setInvitations((prev) => [newInv, ...prev]);
+    return { success: true };
+  };
+
+  const respondToInvitation = (invitationId: string, action: 'accept' | 'decline' | 'mute' | 'report') => {
+    setInvitations((prev) =>
+      prev.map((inv) => {
+        if (inv.id !== invitationId) return inv;
+        if (action === 'accept') {
+          // If room invitation, automatically add user to room if not member
+          if (inv.type === 'room') {
+            setSelectedRoomId(inv.targetId);
+            setActiveTab('rooms');
+          } else if (inv.type === 'learning') {
+            setSelectedLearningId(inv.targetId);
+            setActiveTab('learn');
+          }
+          return { ...inv, status: 'accepted' };
+        } else if (action === 'decline') {
+          return { ...inv, status: 'declined' };
+        } else if (action === 'mute') {
+          mutePrayerSender(inv.senderName);
+          return { ...inv, status: 'muted' };
+        } else if (action === 'report') {
+          blockUser(inv.senderName);
+          return { ...inv, status: 'declined' };
+        }
+        return inv;
+      })
+    );
   };
 
   const exportUserData = () => {
@@ -233,7 +608,9 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       complianceStatement: 'HIPAA & Federal Data Portability Guarantee - Client Controlled Sanctuary Archive',
       language: currentLanguage,
       hearthTone,
+      userProfile,
       prayers,
+      invitations,
       savedLearning: learningModules.filter((m) => m.progressPercent > 0),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -247,6 +624,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const purgeUserData = () => {
     setPrayers([]);
+    setInvitations([]);
     setLearningModules((prev) => prev.map((m) => ({ ...m, progressPercent: 0 })));
     localStorage.clear();
   };
@@ -271,12 +649,37 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setAccessibility,
         activeTab,
         setActiveTab,
+        userProfile,
+        setUserProfile,
+        updateDisplayName,
+        updatePrimaryTradition,
+        toggleSecondaryTradition,
+        toggleSameTraditionOnly,
+        setSameTraditionScope,
+        dismissReflection,
         rooms,
         selectedRoomId,
         setSelectedRoomId,
         addRoomMessage,
         prayers,
         addPrayer,
+        activePrayerDetail,
+        setActivePrayerDetail,
+        respondToPrayer,
+        mutePrayerSender,
+        mutedSenders,
+        blockedUsers,
+        blockUser,
+        unblockUser,
+        prayerRequestsEnabled,
+        setPrayerRequestsEnabled,
+        invitations,
+        sendInvitation,
+        respondToInvitation,
+        invitationPreferences,
+        setInvitationPreferences,
+        isInvitationsModalOpen,
+        setIsInvitationsModalOpen,
         learningModules,
         selectedLearningId,
         setSelectedLearningId,
@@ -288,6 +691,8 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsPrayComposerOpen,
         isLanguageModalOpen,
         setIsLanguageModalOpen,
+        isOnline,
+        offlineQueueCount,
         exportUserData,
         purgeUserData,
       }}

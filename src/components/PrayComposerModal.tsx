@@ -3,14 +3,22 @@ import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
 import { HearthFlameGlow } from './SacredGeometry';
 import { ambientAudio } from '../audio/ambientAudioEngine';
+import type { PrayerDestination, PrayerReminderInterval } from '../types';
 import {
   Sparkles,
   Lock,
   UserCheck,
   Users,
+  Globe,
   X,
   AlertTriangle,
   ShieldCheck,
+  Mic,
+  MicOff,
+  Bell,
+  CheckCircle2,
+  ArrowRight,
+  WifiOff,
 } from 'lucide-react';
 
 export const PrayComposerModal: React.FC = () => {
@@ -23,39 +31,45 @@ export const PrayComposerModal: React.FC = () => {
     rooms,
     ambientSettings,
     scanForPhiAndSafety,
+    isOnline,
   } = useHearth();
 
-  const [prayerType, setPrayerType] = useState<'private' | 'direct' | 'room'>('private');
+  const [destination, setDestination] = useState<PrayerDestination>('journal');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [selectedRoomName, setSelectedRoomName] = useState(rooms[0]?.title || 'Contemplative Silence & Centering');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [consentConfirmed, setConsentConfirmed] = useState(false);
+  const [addToPersonalLog, setAddToPersonalLog] = useState(true);
+  const [privateReminder, setPrivateReminder] = useState<PrayerReminderInterval>('none');
+  const [isDictating, setIsDictating] = useState(false);
   const [safetyNotice, setSafetyNotice] = useState<string | null>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false);
+  const [submissionFeedback, setSubmissionFeedback] = useState<string | null>(null);
 
   if (!isPrayComposerOpen) return null;
 
   const currentTone = HEARTH_TONES[hearthTone];
 
-  // Templates for quick starting
+  // Gentle templates for contemplative starting points
   const templates = [
     {
-      label: 'For Healing & Solace',
+      label: 'For Peace & Solace',
       content: 'May deep healing, inner stillness, and restorative peace surround and uphold the body, mind, and spirit.',
     },
     {
-      label: 'Gratitude for Dawn',
+      label: 'For Healing & Recovery',
+      content: 'Holding gentle space for whole-being restoration, compassionate care, and courage through this season.',
+    },
+    {
+      label: 'For Gratitude at Dawn',
       content: 'Giving thanks for the quiet light of a new day, for the breath within, and for another opportunity to walk with gentleness.',
     },
     {
-      label: 'Strength in Bereavement',
+      label: 'In Grief & Bereavement',
       content: 'Holding the memory of our departed with tender reverence. May comforting light soften grief and awaken enduring love.',
-    },
-    {
-      label: 'Seeking Guidance & Clarity',
-      content: 'Quiet the noise of anxious decisions. Let wisdom and righteous intuition guide my footsteps toward that which is truly good.',
     },
   ];
 
@@ -70,35 +84,65 @@ export const PrayComposerModal: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const toggleVoiceDictation = () => {
+    if (isDictating) {
+      setIsDictating(false);
+    } else {
+      setIsDictating(true);
+      // Simulate calm speech recognition transcription
+      setTimeout(() => {
+        setContent((prev) =>
+          prev
+            ? `${prev} May tranquility and clear light dwell in every breath.`
+            : 'May tranquility and clear light dwell in every breath.'
+        );
+        setIsDictating(false);
+      }, 2500);
+    }
+  };
+
+  const handleProceedToPreview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
 
-    if (prayerType === 'direct' && (!recipientName.trim() || !consentConfirmed)) {
-      alert('Consent Required: To protect recipient autonomy and privacy, please confirm explicit consent before sending.');
+    if (destination === 'person' && (!recipientName.trim() || !consentConfirmed)) {
+      alert('Affirmative Consent Required: To protect recipient autonomy and privacy, please confirm explicit mutual consent before sending.');
       return;
     }
 
-    addPrayer({
-      type: prayerType,
-      title: title.trim() || (prayerType === 'private' ? 'Quiet Journal Reflection' : 'Heartfelt Intention'),
+    setIsPreviewMode(true);
+  };
+
+  const handleFinalSubmit = () => {
+    const result = addPrayer({
+      type: destination === 'journal' ? 'private' : destination === 'person' ? 'direct' : 'room',
+      destinationType: destination,
+      title: title.trim() || (destination === 'journal' ? 'Quiet Journal Reflection' : 'Heartfelt Intention'),
       content: content.trim(),
-      recipientName: prayerType === 'direct' ? recipientName.trim() : undefined,
-      consentGranted: prayerType === 'direct' ? consentConfirmed : undefined,
-      roomName: prayerType === 'room' ? selectedRoomName : undefined,
+      recipientName: destination === 'person' ? recipientName.trim() : undefined,
+      consentGranted: destination === 'person' ? consentConfirmed : undefined,
+      roomName: destination === 'room' ? selectedRoomName : undefined,
       isAnonymous,
+      privateReminder,
     });
+
+    if (result.error) {
+      setSubmissionFeedback(result.error);
+      return;
+    }
 
     setIsSubmittedSuccess(true);
     setTimeout(() => {
       setIsSubmittedSuccess(false);
+      setIsPreviewMode(false);
       setIsPrayComposerOpen(false);
       setTitle('');
       setContent('');
       setRecipientName('');
       setConsentConfirmed(false);
       setSafetyNotice(null);
-    }, 2000);
+      setSubmissionFeedback(null);
+    }, 2200);
   };
 
   return (
@@ -106,7 +150,7 @@ export const PrayComposerModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="prayer-sanctuary-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md transition-all duration-500 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md transition-all duration-300 overflow-y-auto"
       style={{
         backgroundColor:
           timeOfDay === 'night'
@@ -115,7 +159,7 @@ export const PrayComposerModal: React.FC = () => {
       }}
     >
       <div
-        className="w-full max-w-2xl rounded-3xl p-6 sm:p-8 border shadow-2xl relative transition-all duration-500 overflow-hidden flex flex-col justify-between max-h-[92vh] overflow-y-auto"
+        className="w-full max-w-2xl rounded-3xl p-6 sm:p-8 border shadow-2xl relative transition-all duration-300 overflow-hidden flex flex-col justify-between max-h-[92vh] overflow-y-auto"
         style={{
           backgroundColor: timeOfDay === 'night' ? '#2A231D' : '#FAF6F0',
           borderColor: currentTone.primary,
@@ -129,14 +173,13 @@ export const PrayComposerModal: React.FC = () => {
         {/* Soft rising-light confirmation screen on submit */}
         {isSubmittedSuccess ? (
           <div className="py-16 text-center space-y-4 animate-in zoom-in-95 duration-500 relative">
-            {/* Single rising particle of light that travels upward and dissolves */}
             <div className="relative flex justify-center items-center h-24">
               <div
-                className="w-6 h-6 rounded-full blur-xs animate-ping opacity-60"
+                className="w-8 h-8 rounded-full blur-xs animate-ping opacity-60"
                 style={{ backgroundColor: currentTone.primary }}
               />
               <div
-                className="absolute w-3 h-3 rounded-full bg-white shadow-xl animate-bounce"
+                className="absolute w-4 h-4 rounded-full bg-white shadow-xl animate-bounce"
                 style={{ animationDuration: '2.5s' }}
               />
             </div>
@@ -146,19 +189,120 @@ export const PrayComposerModal: React.FC = () => {
             <p className="text-sm text-stone-500 max-w-md mx-auto font-serif italic">
               “Deep peace of the quiet earth to you, deep peace of the shining stars to you.”
             </p>
+            {!isOnline && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-xs font-mono">
+                <WifiOff className="w-3.5 h-3.5" />
+                <span>Saved to your local encrypted vault. Will sync gently when reconnected.</span>
+              </div>
+            )}
+          </div>
+        ) : isPreviewMode ? (
+          /* Explicit Preview Screen */
+          <div className="space-y-5 animate-in fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200/20">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                <div>
+                  <h3 className="font-serif text-xl font-normal m-0">Review Your Intention</h3>
+                  <p className="text-xs text-stone-400">Verify destination, consent, and visibility before committing.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPreviewMode(false)}
+                className="p-1 rounded-full hover:bg-stone-500/20"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-stone-500 uppercase tracking-wider text-[10px]">Destination:</span>
+                <span className="font-serif font-medium" style={{ color: currentTone.primary }}>
+                  {destination === 'journal'
+                    ? '🔒 Private Journal (Only Visible to You)'
+                    : destination === 'person'
+                    ? `🕊 Specific Person: ${recipientName} (Consent Verified)`
+                    : destination === 'room'
+                    ? `🕯 Moderated Circle: ${selectedRoomName}`
+                    : '🌐 Moderated Public Board'}
+                </span>
+              </div>
+
+              {title && (
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-stone-500 uppercase tracking-wider text-[10px]">Title:</span>
+                  <span className="font-serif font-medium">{title}</span>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <span className="font-semibold text-stone-500 uppercase tracking-wider text-[10px]">Intention Text:</span>
+                <p className="font-serif italic text-sm p-3 rounded-xl bg-stone-500/10 leading-relaxed">
+                  “{content}”
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-200/20 text-[11px] text-stone-500">
+                <div>
+                  <strong>Author Visibility:</strong> {isAnonymous ? 'Anonymous' : 'Your Display Name'}
+                </div>
+                <div>
+                  <strong>Private Reminder:</strong> {privateReminder === 'none' ? 'None' : `${privateReminder.toUpperCase()} chime`}
+                </div>
+                <div>
+                  <strong>Personal Log:</strong> {addToPersonalLog ? 'Saved in Personal Log' : 'Not logged'}
+                </div>
+                <div>
+                  <strong>Network:</strong> {isOnline ? 'Online' : 'Offline (Local Vault Queue)'}
+                </div>
+              </div>
+            </div>
+
+            {submissionFeedback && (
+              <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{submissionFeedback}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-3 border-t border-stone-200/20">
+              <button
+                type="button"
+                onClick={() => setIsPreviewMode(false)}
+                className="px-4 py-2 rounded-full font-serif text-xs border border-stone-300/40 hover:bg-stone-500/10"
+              >
+                Back to Edit
+              </button>
+
+              <button
+                type="button"
+                onClick={handleFinalSubmit}
+                className="px-6 py-2.5 rounded-full font-serif text-xs font-semibold flex items-center gap-2 transition-transform hover:scale-102 shadow-md"
+                style={{
+                  backgroundColor: currentTone.primary,
+                  color: '#2C2520',
+                }}
+              >
+                <span>Commit to the Hearth</span>
+                <Sparkles className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
+          /* Writing Surface Form */
+          <form onSubmit={handleProceedToPreview} className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-200/20">
               <div className="flex items-center gap-2.5">
-                <HearthFlameGlow size={36} color={currentTone.primary} />
+                <HearthFlameGlow size={32} color={currentTone.primary} />
                 <div>
                   <h2 id="prayer-sanctuary-title" className="font-serif text-xl font-normal leading-snug m-0">
                     Prayer & Intention Sanctuary
                   </h2>
                   <p className="text-xs text-stone-400">
-                    Sacred, non-exploitative writing space. Never broadcast to a public feed.
+                    Sacred, non-exploitative writing space. Responsive across desktop, tablet, and mobile.
                   </p>
                 </div>
               </div>
@@ -172,65 +316,74 @@ export const PrayComposerModal: React.FC = () => {
               </button>
             </div>
 
-            {/* Three Soft Choices */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {[
-                {
-                  id: 'private',
-                  icon: <Lock className="w-4 h-4 text-amber-500" />,
-                  title: 'Private Journal',
-                  desc: 'Encrypted only for you',
-                },
-                {
-                  id: 'direct',
-                  icon: <UserCheck className="w-4 h-4 text-emerald-500" />,
-                  title: 'Send to a Person',
-                  desc: 'Requires explicit mutual consent',
-                },
-                {
-                  id: 'room',
-                  icon: <Users className="w-4 h-4 text-indigo-500" />,
-                  title: 'Offer to a Room',
-                  desc: 'Shared in a moderated circle',
-                },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setPrayerType(opt.id as any)}
-                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all ${
-                    prayerType === opt.id
-                      ? 'ring-2 shadow-xs font-medium'
-                      : 'opacity-70 hover:opacity-100'
-                  }`}
-                  style={{
-                    borderColor:
-                      prayerType === opt.id ? currentTone.primary : 'rgba(232, 168, 124, 0.25)',
-                    backgroundColor:
-                      prayerType === opt.id ? `${currentTone.primary}20` : 'transparent',
-                  }}
-                >
-                  <div className="mt-0.5">{opt.icon}</div>
-                  <div>
-                    <div className="text-xs font-serif font-medium">{opt.title}</div>
-                    <div className="text-[10px] text-stone-400 mt-0.5">{opt.desc}</div>
-                  </div>
-                </button>
-              ))}
+            {/* Destination Selector: 4 Choices */}
+            <div className="space-y-1.5">
+              <label className="font-serif text-xs font-medium block">
+                Intention Destination:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  {
+                    id: 'journal',
+                    icon: <Lock className="w-4 h-4 text-amber-500" />,
+                    title: 'Private Journal',
+                    desc: 'Encrypted only for you',
+                  },
+                  {
+                    id: 'person',
+                    icon: <UserCheck className="w-4 h-4 text-emerald-500" />,
+                    title: 'Specific Person',
+                    desc: 'Affirmative mutual consent',
+                  },
+                  {
+                    id: 'room',
+                    icon: <Users className="w-4 h-4 text-indigo-500" />,
+                    title: 'Offer to Room',
+                    desc: 'Moderated circle',
+                  },
+                  {
+                    id: 'public_board',
+                    icon: <Globe className="w-4 h-4 text-sky-500" />,
+                    title: 'Public Board',
+                    desc: 'Moderated community wall',
+                  },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setDestination(opt.id as PrayerDestination)}
+                    className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all ${
+                      destination === opt.id ? 'ring-2 font-medium shadow-xs' : 'opacity-70 hover:opacity-100'
+                    }`}
+                    style={{
+                      borderColor:
+                        destination === opt.id ? currentTone.primary : 'rgba(232, 168, 124, 0.25)',
+                      backgroundColor:
+                        destination === opt.id ? `${currentTone.primary}20` : 'transparent',
+                    }}
+                  >
+                    <div>{opt.icon}</div>
+                    <div className="mt-2">
+                      <div className="text-xs font-serif font-medium">{opt.title}</div>
+                      <div className="text-[10px] text-stone-400 mt-0.5">{opt.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Direct Recipient or Room Selection Options */}
-            {prayerType === 'direct' && (
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3 text-xs animate-in fade-in">
+            {/* Direct Recipient Input with Consent Check */}
+            {destination === 'person' && (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-2.5 text-xs animate-in fade-in">
                 <div>
                   <label className="font-serif block font-medium mb-1">
-                    Recipient Full Name or Hearth Handle:
+                    Recipient Display Name or Hearth Handle:
                   </label>
                   <input
                     type="text"
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
-                    placeholder="e.g. Sister Miriam"
+                    placeholder="e.g. Sister Miriam, Sarah M."
                     className="w-full px-3 py-2 rounded-xl border border-emerald-500/30 bg-transparent text-xs"
                     required
                   />
@@ -250,15 +403,16 @@ export const PrayComposerModal: React.FC = () => {
               </div>
             )}
 
-            {prayerType === 'room' && (
-              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5 animate-in fade-in">
+            {/* Room Selector */}
+            {destination === 'room' && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5 animate-in fade-in">
                 <label className="font-serif font-medium block">
                   Select Moderated Circle:
                 </label>
                 <select
                   value={selectedRoomName}
                   onChange={(e) => setSelectedRoomName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-amber-500/30 bg-transparent text-xs"
+                  className="w-full px-3 py-2 rounded-xl border border-amber-500/30 bg-transparent text-xs font-serif"
                 >
                   {rooms.map((r) => (
                     <option key={r.id} value={r.title} className="text-stone-900 bg-stone-100">
@@ -269,7 +423,7 @@ export const PrayComposerModal: React.FC = () => {
               </div>
             )}
 
-            {/* Quick Templates Pill Row */}
+            {/* Contemplative Starters & Templates */}
             <div className="space-y-1.5">
               <span className="text-[11px] font-serif text-stone-400 block">
                 Contemplative Starters & Templates:
@@ -292,14 +446,14 @@ export const PrayComposerModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Title & Writing Surface */}
+            {/* Title & Writing Area */}
             <div className="space-y-2">
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Optional Intention Title..."
-                className="w-full px-4 py-2 rounded-2xl bg-stone-500/5 border border-stone-200/20 text-sm font-serif placeholder-stone-400 focus:outline-none"
+                className="w-full px-4 py-2 rounded-2xl bg-stone-500/5 border border-stone-200/20 text-xs font-serif placeholder-stone-400 focus:outline-none"
               />
 
               <div className="relative">
@@ -308,17 +462,72 @@ export const PrayComposerModal: React.FC = () => {
                   onChange={handleContentChange}
                   onFocus={() => ambientSettings.fadeOnInteraction && ambientAudio.fadeForInteraction(true)}
                   onBlur={() => ambientSettings.fadeOnInteraction && ambientAudio.fadeForInteraction(false)}
-                  rows={5}
-                  placeholder="Pour your heart onto this quiet paper surface... (Dynamic type and screen readers fully supported)"
-                  className="w-full p-4 rounded-3xl bg-stone-500/5 border border-stone-200/30 text-base font-serif leading-relaxed placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-amber-400 shadow-inner"
+                  rows={4}
+                  placeholder="Pour your heart onto this quiet paper surface... (Touch, pencil, keyboard, assistive tech supported)"
+                  className="w-full p-4 rounded-3xl bg-stone-500/5 border border-stone-200/30 text-sm font-serif leading-relaxed placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-amber-400 shadow-inner"
                   required
                 />
+
+                {/* Voice Dictation Button */}
+                <button
+                  type="button"
+                  onClick={toggleVoiceDictation}
+                  className={`absolute bottom-3 right-3 p-2 rounded-full border transition-all flex items-center gap-1.5 text-xs ${
+                    isDictating
+                      ? 'bg-rose-500 text-white animate-pulse'
+                      : 'bg-stone-500/10 hover:bg-stone-500/20 text-stone-600 dark:text-stone-300 border-stone-300/30'
+                  }`}
+                  title="Gentle Voice Dictation"
+                  aria-label="Toggle voice dictation"
+                >
+                  {isDictating ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                  <span className="text-[10px] hidden sm:inline">
+                    {isDictating ? 'Listening...' : 'Dictate'}
+                  </span>
+                </button>
               </div>
             </div>
 
-            {/* HIPAA / Health Privacy & Safety Warning Notification */}
+            {/* Optional Controls: Anonymity, Reminder, Personal Log */}
+            <div className="p-3 rounded-2xl bg-stone-500/5 border border-stone-200/20 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <label className="flex items-center gap-2 cursor-pointer text-stone-500">
+                <input
+                  type="checkbox"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="rounded text-amber-600"
+                />
+                <span>Anonymity Toggle</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer text-stone-500">
+                <input
+                  type="checkbox"
+                  checked={addToPersonalLog}
+                  onChange={(e) => setAddToPersonalLog(e.target.checked)}
+                  className="rounded text-amber-600"
+                />
+                <span>Save to Personal Log</span>
+              </label>
+
+              <div className="flex items-center gap-1.5 text-stone-500">
+                <Bell className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <select
+                  value={privateReminder}
+                  onChange={(e) => setPrivateReminder(e.target.value as PrayerReminderInterval)}
+                  className="bg-transparent border border-stone-300/30 rounded-lg px-2 py-0.5 text-[11px]"
+                >
+                  <option value="none">No Reminder</option>
+                  <option value="daily">Daily Chime</option>
+                  <option value="weekly">Weekly Chime</option>
+                  <option value="evening">Evening Quiet</option>
+                </select>
+              </div>
+            </div>
+
+            {/* HIPAA Safety Notice */}
             {safetyNotice && (
-              <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
+              <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
                 <div className="leading-relaxed">
                   <strong>Privacy Notice: </strong>
@@ -327,22 +536,11 @@ export const PrayComposerModal: React.FC = () => {
               </div>
             )}
 
-            {/* Footer with Consent Preview & Action */}
+            {/* Footer with Preview Action */}
             <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-stone-200/20 text-xs">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-1.5 cursor-pointer text-stone-500">
-                  <input
-                    type="checkbox"
-                    checked={isAnonymous}
-                    onChange={(e) => setIsAnonymous(e.target.checked)}
-                    className="rounded text-amber-600"
-                  />
-                  <span>Record Anonymously</span>
-                </label>
-                <span className="text-stone-400 font-mono text-[11px] flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  No Ads / No Sale
-                </span>
+              <div className="flex items-center gap-2 text-stone-400 font-mono text-[11px]">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Zero Commercial Trackers • Affirmative Consent</span>
               </div>
 
               <button
@@ -354,8 +552,8 @@ export const PrayComposerModal: React.FC = () => {
                   color: '#2C2520',
                 }}
               >
-                <span>Commit to the Hearth</span>
-                <Sparkles className="w-3.5 h-3.5" />
+                <span>Preview & Consent Check</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </form>

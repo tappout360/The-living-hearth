@@ -689,6 +689,401 @@ export const COMPREHENSIVE_LEARNING_PATHS: ComprehensiveLearningPath[] = [
       },
     ],
   },
+  // 8. Sikhism (Sikhi)
+  {
+    id: 'path-sikhism',
+    title: 'Sikhism: Divine Oneness, Equality & Selfless Service',
+    tradition: 'Sikhism',
+    category: 'Dharmic / Indian-Origin',
+    shortDescription: 'Explore the vision of Guru Nanak, the eternal living Guru Granth Sahib, radical social equality through Langar, and the unity of devotion and justice.',
+    learningOutcomes: [
+      'Articulate the principle of Ik Onkar (One Universal Creator) and the elimination of caste, gender, and social discrimination.',
+      'Understand the historical lineage of the Ten Gurus and the perpetual living authority of the Guru Granth Sahib.',
+      'Explain the Sikh ethical triad: Kirat Karo (honest labor), Naam Japna (divine remembrance), and Vand Chhako (sharing with all).',
+      'Trace the communal institutions of Sangat (holy congregation) and Langar (free communal kitchen) as lived embodiments of egalitarian theology.',
+    ],
+    lastScholarlyReviewDate: 'September 2026',
+    coverageStatus: 'Live',
+    scholarlyCitations: [
+      'Prof. Hew McLeod, "Sikhism." Penguin Books.',
+      'Prof. Nikky-Guninder Kaur Singh, "The Feminine Principle in the Sikh Vision of the Transcendent." Cambridge University Press.',
+      'Prof. Pashaura Singh & Louis E. Fenech, "The Oxford Handbook of Sikh Studies."',
+    ],
+    levelGroups: [
+      {
+        level: 'Beginner',
+        estimatedTime: '2.5–3 hours',
+        lessons: [
+          {
+            id: 'sikh-b1',
+            title: 'Guru Nanak & the Revealing of Ik Onkar',
+            estimatedMinutes: 35,
+            summary: 'The 15th-century Punjab context, the transformative river experience of Guru Nanak, and the foundational proclamation: "There is no Hindu, there is no Muslim."',
+            internalDiversityNotes: 'Emphasizes the universalist, border-crossing nature of early Sikh revelation.',
+            comparativeLinks: ['Bhakti Movement', 'Sufi Poetry', 'Divine Immanence'],
+          },
+          {
+            id: 'sikh-b2',
+            title: 'The Living Word: Sri Guru Granth Sahib',
+            estimatedMinutes: 40,
+            summary: 'The compilation of the sacred scripture by Guru Arjan and Guru Gobind Singh; inclusion of hymns from Hindu and Muslim saints (Bhagats) alongside the Sikh Gurus.',
+            internalDiversityNotes: 'Unique among major world scriptures for intentionally including voices from outside its immediate religious lineage.',
+          },
+          {
+            id: 'sikh-b3',
+            title: 'Langar & Sangat: The Architecture of Equality',
+            estimatedMinutes: 35,
+            summary: 'The free communal kitchen where all sit on the floor as equals regardless of rank, gender, or religion; the Gurdwara as a sanctuary open to all four directions.',
+            internalDiversityNotes: 'Demonstrates theology materialized as hospitality and social justice.',
+          },
+        ],
+      },
+      {
+        level: 'Intermediate',
+        estimatedTime: '3.5–4 hours',
+        lessons: [
+          {
+            id: 'sikh-i1',
+            title: 'The Khalsa, Vaisakhi 1699 & The Five Ks',
+            estimatedMinutes: 45,
+            summary: 'The founding of the Khalsa by Guru Gobind Singh; adoption of common names Singh (Lion) and Kaur (Princess) to dissolve caste distinction; the symbolic meaning of the Panj Kakar.',
+            internalDiversityNotes: 'Discusses Sahajdhari and Amritdhari identities within the global Sikh panth.',
+          },
+          {
+            id: 'sikh-i2',
+            title: 'Miri-Piri: Harmonizing Spiritual & Temporal Responsibility',
+            estimatedMinutes: 40,
+            summary: 'The doctrine introduced by Guru Hargobind that inner contemplation (Piri) must never be separated from active defense of the oppressed (Miri).',
+            internalDiversityNotes: 'Contrasts passive asceticism with the "Saint-Soldier" (Sant-Sipahi) ideal.',
+          },
+        ],
+      },
+      {
+        level: 'Deeper Exploration',
+        estimatedTime: 'Ongoing seminar modules',
+        lessons: [
+          {
+            id: 'sikh-d1',
+            title: 'Mystical Poetics of the Ragas in the Guru Granth Sahib',
+            estimatedMinutes: 60,
+            summary: 'The classification of sacred hymns according to North Indian classical musical modes (Ragas) to evoke specific emotional and contemplative resonances in the human heart.',
+            internalDiversityNotes: 'Focuses on the auditory and affective dimension of Sikh liturgy.',
+          },
+        ],
+      },
+    ],
+    comparativePairs: {
+      partnerTradition: 'Judaism',
+      sharedPrinciple: 'Sacred Covenant and Communal Justice',
+      traditionAPerspective: 'In Sikhi, Seva (selfless service) and Langar manifest the divine presence through radical hospitality to every stranger.',
+      traditionBPerspective: 'In Judaism, Tikkun Olam (repairing the world) and Hesed (steadfast loving-kindness) fulfill the covenant in everyday life.',
+      intersectionInsight: 'Both traditions ground genuine worship not in ascetic retreat from the world, but in active communal responsibility and justice for the vulnerable.',
+    },
+  },
+  // 9. Baháʼí Faith
+  {
+    id: 'path-bahai',
+    title: 'The Baháʼí Faith: Unity of God, Religion & Humankind',
+    tradition: 'Baháʼí Faith',
+    category: 'Abrahamic & Related',
+    shortDescription: 'Discover the teachings of Baháʼuʼlláh on the progressive oneness of divine revelation, the essential nobility of human nature, and building peaceful global institutions.',
+    learningOutcomes: [
+      'Explain the central doctrine of Progressive Revelation across human civilizations.',
+      'Understand the historical emergence from 19th-century Persia through the Báb and Baháʼuʼlláh.',
+      'Examine core social principles: gender equality, independent investigation of truth, and world peace.',
+      'Appreciate the non-clergy administrative order and local consultative community building.',
+    ],
+    lastScholarlyReviewDate: 'September 2026',
+    coverageStatus: 'Live',
+    scholarlyCitations: [
+      'Prof. Peter Smith, "An Introduction to the Baha\'i Faith." Cambridge University Press.',
+      'Prof. Moojan Momen, "The Babi and Baha\'i Religions." George Ronald.',
+      'Bahá\'u\'lláh, "The Hidden Words" & "Kitáb-i-Íqán" (The Book of Certitude).',
+    ],
+    levelGroups: [
+      {
+        level: 'Beginner',
+        estimatedTime: '2–2.5 hours',
+        lessons: [
+          {
+            id: 'bahai-b1',
+            title: 'Historical Origins: The Báb & Baháʼuʼlláh',
+            estimatedMinutes: 35,
+            summary: 'The mid-19th-century messianic expectations in Persia, the martyrdom of the Báb, and Baháʼuʼlláh’s 40-year exile and declaration of his mission.',
+            internalDiversityNotes: 'Presents both historical trajectory and the succession through \'Abdu\'l-Bahá.',
+          },
+          {
+            id: 'bahai-b2',
+            title: 'The Threefold Oneness: God, Religion, Humanity',
+            estimatedMinutes: 35,
+            summary: 'The core theological triad: One ineffable Creator, one continuous unfolding of spiritual truth through Manifestations, and one human family.',
+            internalDiversityNotes: 'Frames world religions as chapters in a single ongoing book of divine guidance.',
+          },
+          {
+            id: 'bahai-b3',
+            title: 'Social Principles for a Global Age',
+            estimatedMinutes: 30,
+            summary: 'The elimination of all forms of prejudice, full equality of women and men, universal education, and the harmony of science and religion.',
+            internalDiversityNotes: 'Explores how 19th-century revelation anticipated 21st-century global cooperation.',
+          },
+        ],
+      },
+      {
+        level: 'Intermediate',
+        estimatedTime: '3 hours',
+        lessons: [
+          {
+            id: 'bahai-i1',
+            title: 'Consultation & Community Life without Clergy',
+            estimatedMinutes: 40,
+            summary: 'The institution of Local and National Spiritual Assemblies; the non-adversarial method of Consultation (Mashwarah) to discover collective truth.',
+            internalDiversityNotes: 'Examines democratic spiritual administration without an ordained professional clergy.',
+          },
+        ],
+      },
+      {
+        level: 'Deeper Exploration',
+        estimatedTime: 'Ongoing research',
+        lessons: [
+          {
+            id: 'bahai-d1',
+            title: 'Mystical Works: The Hidden Words & Seven Valleys',
+            estimatedMinutes: 50,
+            summary: 'Baháʼuʼlláh’s poetic and aphoristic masterpieces composed during his Baghdad exile, reflecting profound Sufi imagery and interior ascent.',
+            internalDiversityNotes: 'Connects the outer social architecture with interior mystical devotion.',
+          },
+        ],
+      },
+    ],
+  },
+  // 10. Jainism
+  {
+    id: 'path-jainism',
+    title: 'Jainism: Radical Non-Violence (Ahiṃsā) & Multi-Sided Truth',
+    tradition: 'Jainism',
+    category: 'Dharmic / Indian-Origin',
+    shortDescription: 'Explore the profound philosophy of Ahiṃsā, the epistemology of Anekāntavāda (many-sidedness of reality), and the path of spiritual liberation (Moksha).',
+    learningOutcomes: [
+      'Grasp the foundational axiom Ahiṃsā Paramo Dharma (Non-violence is the supreme spiritual duty) across thought, speech, and deed.',
+      'Understand the epistemological humility of Anekāntavāda and Syādvāda (no single viewpoint can encompass absolute truth).',
+      'Distinguish the Digambara and Śvetāmbara traditions regarding monastic practice and sacred texts.',
+      'Appreciate the concept of Aparigraha (non-possessiveness) and its pioneering contributions to ecological stewardship.',
+    ],
+    lastScholarlyReviewDate: 'September 2026',
+    coverageStatus: 'Live',
+    scholarlyCitations: [
+      'Prof. Paul Dundas, "The Jains." Routledge.',
+      'Prof. Padmanabh S. Jaini, "The Jaina Path of Purification." University of California Press.',
+      'Tattvārtha Sūtra of Ācārya Umāsvāti.',
+    ],
+    levelGroups: [
+      {
+        level: 'Beginner',
+        estimatedTime: '2.5 hours',
+        lessons: [
+          {
+            id: 'jain-b1',
+            title: 'Mahāvīra & The 24 Tīrthaṅkaras',
+            estimatedMinutes: 35,
+            summary: 'The ancient Śramaṇa lineage, the life of Vardhamāna Mahāvīra (the 24th Ford-Maker), and the rejection of Vedic animal sacrifices and caste hierarchies.',
+            internalDiversityNotes: 'Clarifies that Mahāvīra was a rejuvenator of an eternal lineage rather than a solitary founder.',
+          },
+          {
+            id: 'jain-b2',
+            title: 'Ahiṃsā: The Universal Web of Sentient Life',
+            estimatedMinutes: 40,
+            summary: 'The classification of life forms (Jīva) from one-sensed microscopic organisms to complex beings; ethical diet, mindfulness of steps, and gentle speech.',
+            internalDiversityNotes: 'Presents Jain non-violence as active reverence for the sacred vitality of all beings.',
+          },
+          {
+            id: 'jain-b3',
+            title: 'Anekāntavāda: Intellectual Non-Violence',
+            estimatedMinutes: 35,
+            summary: 'The doctrine of the multiplicity of viewpoints; the parable of the blind men and the elephant; cultivating intellectual humility and dialogical peace.',
+            internalDiversityNotes: 'Directly informs The Living Hearth’s multi-perspective educational ethics.',
+          },
+        ],
+      },
+      {
+        level: 'Intermediate',
+        estimatedTime: '3.5 hours',
+        lessons: [
+          {
+            id: 'jain-i1',
+            title: 'The Three Jewels & The Five Vows',
+            estimatedMinutes: 45,
+            summary: 'Samyak Darshana (Right Faith), Samyak Jnana (Right Knowledge), and Samyak Charitra (Right Conduct); the Mahavratas (monastic) and Anuvratas (lay vows).',
+            internalDiversityNotes: 'Explores the practical lifestyle of modern lay Jains in business, medicine, and public life.',
+          },
+        ],
+      },
+      {
+        level: 'Deeper Exploration',
+        estimatedTime: 'Ongoing modules',
+        lessons: [
+          {
+            id: 'jain-d1',
+            title: 'Karma as Physical Substance & The Pure Soul (Siddha)',
+            estimatedMinutes: 55,
+            summary: 'Unique Jain metaphysics of karma as fine particulate matter (pudgala) that adheres to the soul through passion, and the austere spiritual technology of shed karma (Nirjarā).',
+            internalDiversityNotes: 'Contrasts with the psychological/intentional karma models of Buddhism and Hinduism.',
+          },
+        ],
+      },
+    ],
+  },
+  // 11. Taoism (Daoism)
+  {
+    id: 'path-taoism',
+    title: 'Taoism: Harmony with the Dao, Wu Wei & Natural Simplicity',
+    tradition: 'Taoism / Daoism',
+    category: 'East Asian & Related',
+    shortDescription: 'Delve into the Daodejing of Laozi, Zhuangzi’s playful wisdom, the flowing balance of Yin and Yang, and the art of living in effortless alignment (Wu Wei).',
+    learningOutcomes: [
+      'Comprehend the Dao as the nameless, primordial origin and organic flow of the cosmos.',
+      'Explain the spiritual virtue of Wu Wei (effortless action / non-forcing) in leadership, daily life, and conflict resolution.',
+      'Analyze the philosophical divergence and convergence between Daoism and Confucianism in Chinese history.',
+      'Understand Daoist self-cultivation (Neidan, Qigong) and its deep reverence for untamed nature.',
+    ],
+    lastScholarlyReviewDate: 'September 2026',
+    coverageStatus: 'Live',
+    scholarlyCitations: [
+      'Prof. Livia Kohn, "Daoism and Chinese Culture." Three Pines Press.',
+      'Prof. A.C. Graham, "Disputers of the Tao." Open Court.',
+      'Laozi, "Daodejing" & Zhuangzi, "The Inner Chapters."',
+    ],
+    levelGroups: [
+      {
+        level: 'Beginner',
+        estimatedTime: '2.5 hours',
+        lessons: [
+          {
+            id: 'dao-b1',
+            title: 'Laozi & the Daodejing: The Ineffable Path',
+            estimatedMinutes: 35,
+            summary: '"The Dao that can be told of is not the eternal Dao." The paradoxes of water, yielding strength, the valley spirit, and the uncarved block (Pu).',
+            internalDiversityNotes: 'Examines both historical authorship questions and philosophical depth.',
+          },
+          {
+            id: 'dao-b2',
+            title: 'Wu Wei: The Art of Effortless Action',
+            estimatedMinutes: 40,
+            summary: 'Living without contrived friction or coercive force; aligning with the grain of reality like a leaf floating upon a winding stream.',
+            internalDiversityNotes: 'Contrasts Western activist willpower with contemplative resonance.',
+          },
+          {
+            id: 'dao-b3',
+            title: 'Yin & Yang: Dynamic Harmony in All Things',
+            estimatedMinutes: 35,
+            summary: 'The interplay of dark and light, receptive and active, stillness and motion; the cyclical rhythm of nature where nothing remains at an extreme.',
+            internalDiversityNotes: 'Connects directly with The Living Hearth’s time-of-day lighting cycles.',
+          },
+        ],
+      },
+      {
+        level: 'Intermediate',
+        estimatedTime: '3.5 hours',
+        lessons: [
+          {
+            id: 'dao-i1',
+            title: 'Zhuangzi: Humor, Freedom & The Great Transformer',
+            estimatedMinutes: 45,
+            summary: 'The butterfly dream, the useless tree, Cook Ding carving an ox; transcending human-made rigid categories of right and wrong through playful freedom.',
+            internalDiversityNotes: 'Explores the literary and psychological genius of the Inner Chapters.',
+          },
+        ],
+      },
+      {
+        level: 'Deeper Exploration',
+        estimatedTime: 'Ongoing seminar',
+        lessons: [
+          {
+            id: 'dao-d1',
+            title: 'Inner Alchemy (Neidan) & Sacred Geography',
+            estimatedMinutes: 55,
+            summary: 'The five sacred mountains of China, temples nestled in misty valleys, and the circulation of vital breath (Qi) and spirit (Shen) in the human microcosm.',
+            internalDiversityNotes: 'Bridges philosophical Daoism (Daojia) and religious liturgical Daoism (Daojiao).',
+          },
+        ],
+      },
+    ],
+  },
+  // 12. Shinto
+  {
+    id: 'path-shinto',
+    title: 'Shinto: Reverence for Kami, Nature Sacredness & Purity',
+    tradition: 'Shinto',
+    category: 'East Asian & Related',
+    shortDescription: 'Explore the indigenous spiritual lifeway of Japan, the presence of Kami in ancient forests and waterfalls, purification rites (Harae), and community festivals (Matsuri).',
+    learningOutcomes: [
+      'Describe the concept of Kami as sacred, awe-inspiring presence in natural phenomena, places, and ancestors.',
+      'Understand the architectural and symbolic significance of Jinja (shrines), Torii gates, and sacred ropes (Shimenawa).',
+      'Explain the fundamental focus on purity (Kiyome) and purification rites (Harae) to remove spiritual pollution (Kegare).',
+      'Trace the long syncretic dialogue and coexistence between Shinto and Buddhism (Shinbutsu-shūgō).',
+    ],
+    lastScholarlyReviewDate: 'September 2026',
+    coverageStatus: 'Live',
+    scholarlyCitations: [
+      'Prof. John Breen & Mark Teeuwen, "A New History of Shinto." Wiley-Blackwell.',
+      'Prof. Thomas P. Kasulis, "Shinto: The Way Home." University of Hawaii Press.',
+      'Sokyo Ono, "Shinto: The Kami Way." Tuttle Publishing.',
+    ],
+    levelGroups: [
+      {
+        level: 'Beginner',
+        estimatedTime: '2 hours',
+        lessons: [
+          {
+            id: 'shinto-b1',
+            title: 'The World of Kami: Sacred Awe in Nature',
+            estimatedMinutes: 35,
+            summary: 'The spirits and vital forces of mountains, ancient cedar trees, rivers, and storms; the animistic intimacy of the Japanese archipelago.',
+            internalDiversityNotes: 'Explains that Kami are not omnipotent transcendent gods, but immediate presences evoking wonder and reverence.',
+          },
+          {
+            id: 'shinto-b2',
+            title: 'Jinja: Sacred Thresholds & Shrines',
+            estimatedMinutes: 35,
+            summary: 'Crossing the red Torii gate from the mundane into the sacred; Temizuya water purification basins; bowing twice, clapping twice, and bowing in quiet prayer.',
+            internalDiversityNotes: 'Explores shrines from grand complexes (Ise Jingu) to small wayside roadside shrines.',
+          },
+          {
+            id: 'shinto-b3',
+            title: 'Harae: Cleansing & Restoring Wholeness',
+            estimatedMinutes: 30,
+            summary: 'The absence of original sin; ethical imbalance viewed as temporary dust or gloom (Kegare) that is swept away by running water, salt, and sacred waving wands (Haraegushi).',
+            internalDiversityNotes: 'Contrasts moral guilt frameworks with ontological freshness and brightness.',
+          },
+        ],
+      },
+      {
+        level: 'Intermediate',
+        estimatedTime: '3 hours',
+        lessons: [
+          {
+            id: 'shinto-i1',
+            title: 'Shinbutsu-shūgō: Twelve Centuries of Buddhist Coexistence',
+            estimatedMinutes: 45,
+            summary: 'The harmonious syncretism where Kami were recognized as local protectors of the Dharma and Buddhas as transcendent realities; the separation of Shinto and Buddhism in the Meiji era.',
+            internalDiversityNotes: 'Illustrates how cultures navigate multiple sacred systems simultaneously without zero-sum conflict.',
+          },
+        ],
+      },
+      {
+        level: 'Deeper Exploration',
+        estimatedTime: 'Ongoing study',
+        lessons: [
+          {
+            id: 'shinto-d1',
+            title: 'Musubi: The Generative Interconnection of All Life',
+            estimatedMinutes: 50,
+            summary: 'The spiritual concept of Musubi—the vital binding power that produces, connects, and regenerates all phenomena in constant creative becoming.',
+            internalDiversityNotes: 'Connects traditional shrine practices with contemporary ecological awareness in Japan.',
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 // The Living Inventory of Traditions — "Leave Out None" Mandate

@@ -19,6 +19,8 @@ export const ProfileSafetyView: React.FC = () => {
     timeOfDay,
     exportUserData,
     purgeUserData,
+    userProfile,
+    setIsInvitationsModalOpen,
   } = useHearth();
 
   const currentTone = HEARTH_TONES[hearthTone];
@@ -60,17 +62,24 @@ export const ProfileSafetyView: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-serif text-xl sm:text-2xl font-normal m-0">
-                  Your Private Sanctuary Profile
+                  {userProfile.displayName}’s Sanctuary
                 </h2>
                 <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-mono">
                   100% Confidential
                 </span>
               </div>
               <p className="text-xs text-stone-500 mt-1">
-                Zero public exposure. Your location, real name, and spiritual queries are never indexed or shared.
+                Primary Focus: <strong className="font-serif">{userProfile.primaryTradition}</strong> • Display name visible only on your dashboard by default.
               </p>
             </div>
           </div>
+
+          <button
+            onClick={() => setIsInvitationsModalOpen(true)}
+            className="px-4 py-2 rounded-full border border-stone-300/40 text-xs font-serif hover:bg-stone-500/10 flex items-center gap-1.5 self-start sm:self-center"
+          >
+            <span>Manage Invitations</span>
+          </button>
         </div>
       </div>
 

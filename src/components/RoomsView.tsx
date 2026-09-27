@@ -14,7 +14,20 @@ import {
   CheckCircle,
   Globe,
   Volume2,
+  BadgeCheck,
+  Clock,
+  Sliders,
+  X,
 } from 'lucide-react';
+
+interface ReportedItem {
+  id: string;
+  senderName: string;
+  reason: 'solicitation' | 'proselytizing' | 'phi_health' | 'harassment';
+  snippet: string;
+  timestamp: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+}
 
 export const RoomsView: React.FC = () => {
   const {
@@ -27,6 +40,7 @@ export const RoomsView: React.FC = () => {
     currentLanguage,
     t,
     scanForPhiAndSafety,
+    userProfile,
   } = useHearth();
 
   const currentTone = HEARTH_TONES[hearthTone];
@@ -37,10 +51,69 @@ export const RoomsView: React.FC = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [safetyNotice, setSafetyNotice] = useState<string | null>(null);
   const [sentSuccessNotification, setSentSuccessNotification] = useState(false);
-  const [reportedMessageId, setReportedMessageId] = useState<string | null>(null);
   const [showOriginalMap, setShowOriginalMap] = useState<Record<string, boolean>>({});
 
-  // Check safety/HIPAA/solicitation as user types
+  // Moderation & Thresholds State
+  const [isModerationModalOpen, setIsModerationModalOpen] = useState(false);
+  const [slowModeSeconds, setSlowModeSeconds] = useState(60);
+  const [requireConsentPledge, setRequireConsentPledge] = useState(true);
+
+  const handleFlagMessage = (senderName: string, snippet: string) => {
+    setReportedItems((prev) => [
+      {
+        id: `rep-${Date.now()}`,
+        senderName,
+        reason: 'proselytizing',
+        snippet: `“${snippet.slice(0, 60)}...”`,
+        timestamp: 'Just now',
+        status: 'pending',
+      },
+      ...prev,
+    ]);
+    alert('Message flagged. Added to Circle Reporting Queue for review.');
+  };
+  const [reportedItems, setReportedItems] = useState<ReportedItem[]>([
+    {
+      id: 'rep-1',
+      senderName: 'New Member #402',
+      reason: 'solicitation',
+      snippet: '“Join our investment channel for high-yield cryptocurrency…”',
+      timestamp: '10 min ago',
+      status: 'pending',
+    },
+    {
+      id: 'rep-2',
+      senderName: 'Eager Preacher',
+      reason: 'proselytizing',
+      snippet: '“Your doctrine is incomplete; you must convert to our true path…”',
+      timestamp: '25 min ago',
+      status: 'pending',
+    },
+  ]);
+
+  const handleResolveReport = (id: string, action: 'dismiss' | 'resolve' | 'mute') => {
+    setReportedItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        return {
+          ...item,
+          status: action === 'dismiss' ? 'dismissed' : 'resolved',
+        };
+      })
+    );
+  };
+
+  // Helper for role-based badges
+  const getSenderRoleBadge = (senderName: string) => {
+    if (senderName.includes('Sister') || senderName.includes('Master') || senderName.includes('Rabbi') || senderName.includes('Guru')) {
+      return { label: 'Circle Elder', bg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' };
+    }
+    if (senderName.includes('Guide') || senderName === 'Tariq A.' || senderName === 'Ananda P.') {
+      return { label: 'Circle Guide', bg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300' };
+    }
+    return { label: 'Consent Verified', bg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' };
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setMessageInput(val);
@@ -56,7 +129,6 @@ export const RoomsView: React.FC = () => {
     e.preventDefault();
     if (!messageInput.trim() || !selectedRoomId) return;
 
-    // Check anti-solicitation block
     const check = scanForPhiAndSafety(messageInput);
     if (check.hasSolicitation) {
       alert('Solicitation blocked: To preserve the sanctity of our rooms, commercial pitches and recruitment are not permitted.');
@@ -92,8 +164,17 @@ export const RoomsView: React.FC = () => {
               Return to Circles
             </button>
             <div className="flex items-center gap-2">
+              {/* Moderation Thresholds & Safety Queue Trigger */}
+              <button
+                onClick={() => setIsModerationModalOpen(true)}
+                className="px-3 py-1 rounded-full text-[11px] font-serif border border-stone-300/40 hover:border-amber-400 flex items-center gap-1.5 transition-colors"
+                title="Inspect Room Moderation Policies & Queue"
+              >
+                <Sliders className="w-3 h-3 text-amber-500" />
+                <span>Moderation & Queue ({reportedItems.filter((i) => i.status === 'pending').length})</span>
+              </button>
               <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 font-medium">
-                Moderated Sanctuary
+                Protected Circle
               </span>
             </div>
           </div>
@@ -128,10 +209,16 @@ export const RoomsView: React.FC = () => {
 
           {/* Room Covenants & Non-solicitation Rules */}
           <div className="p-3.5 rounded-2xl bg-stone-500/5 border border-stone-200/20 text-xs space-y-1">
-            <span className="font-serif font-semibold text-stone-600 dark:text-stone-300 flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-emerald-600" />
-              Circle Covenants:
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="font-serif font-semibold text-stone-600 dark:text-stone-300 flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                Circle Covenants & Thresholds:
+              </span>
+              <span className="text-[10px] font-mono text-stone-400 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-500" />
+                Slow Mode: {slowModeSeconds}s reflection pause
+              </span>
+            </div>
             <ul className="list-disc list-inside text-stone-500 space-y-0.5">
               {selectedRoom.rules.map((rule, idx) => (
                 <li key={idx}>{rule}</li>
@@ -145,108 +232,102 @@ export const RoomsView: React.FC = () => {
               <button
                 key={mode}
                 onClick={() => setActiveMode(mode)}
-                className={`px-4 py-1.5 rounded-full text-xs font-serif transition-all ${
-                  activeMode === mode ? 'font-semibold shadow-xs' : 'opacity-60 hover:opacity-90'
+                className={`px-4 py-1.5 rounded-full font-serif text-xs transition-all ${
+                  activeMode === mode ? 'font-medium shadow-xs' : 'opacity-60 hover:opacity-100'
                 }`}
                 style={{
                   backgroundColor:
                     activeMode === mode ? currentTone.primary : 'transparent',
                   color: activeMode === mode ? '#2C2520' : 'inherit',
-                  border: `1px solid ${currentTone.primary}50`,
+                  border: `1px solid ${
+                    activeMode === mode ? currentTone.primary : 'rgba(232, 168, 124, 0.3)'
+                  }`,
                 }}
               >
-                {mode === 'Practice' ? '🕯 Practice' : mode === 'Learning' ? '📖 Learning' : '💬 Discussion'}
+                {mode} Mode
               </button>
             ))}
           </div>
         </div>
 
         {/* Message Stream */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-serif text-stone-400 px-2">
-            <span>
-              Messages in {activeMode} Mode ({selectedRoom.recentMessages.filter(m => m.mode === activeMode).length})
-            </span>
-            {currentLanguage !== 'en' && (
-              <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                <Globe className="w-3 h-3" />
-                Live Translation Active ({currentLanguage.toUpperCase()})
-              </span>
-            )}
-          </div>
+        <div className="space-y-4">
+          {selectedRoom.recentMessages.map((msg) => {
+            const isOriginalShown = showOriginalMap[msg.id];
+            const hasTranslation = currentLanguage !== 'en' && msg.sourceLanguage === 'en';
+            const translatedResult = hasTranslation
+              ? translateSpiritualText(msg.content, currentLanguage)
+              : null;
+            const displayContent =
+              hasTranslation && !isOriginalShown && translatedResult
+                ? translatedResult.translated
+                : msg.content;
+            const roleBadge = getSenderRoleBadge(msg.senderName);
 
-          {selectedRoom.recentMessages
-            .filter((m) => m.mode === activeMode)
-            .map((msg) => {
-              const isShowingOriginal = showOriginalMap[msg.id];
-              const translation = translateSpiritualText(msg.content, currentLanguage);
-              const displayContent = isShowingOriginal || currentLanguage === 'en' ? msg.content : translation.translated;
-
-              return (
-                <div
-                  key={msg.id}
-                  className="p-4 rounded-3xl border transition-all space-y-2 relative"
-                  style={{
-                    borderColor: 'rgba(232, 168, 124, 0.2)',
-                    backgroundColor:
-                      timeOfDay === 'night' ? '#27201A' : '#FFFDFB',
-                  }}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-serif font-medium">{msg.senderName}</span>
-                      {msg.traditionTag && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-500">
-                          {msg.traditionTag}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-stone-400">
-                      <span>{msg.timestamp}</span>
-                      {reportedMessageId === msg.id ? (
-                        <span className="text-rose-500 font-mono text-[10px]">Reported to Moderators</span>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setReportedMessageId(msg.id);
-                            alert('Message reported to human moderators for review. Thank you for safeguarding our community.');
-                          }}
-                          className="hover:text-stone-600 p-0.5"
-                          title="Report inappropriate content or solicitation"
-                          aria-label="Report message to moderators"
-                        >
-                          <Flag className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="font-serif text-sm leading-relaxed text-stone-700 dark:text-stone-200">
-                    {displayContent}
-                  </p>
-
-                  {/* Cross-Language Translation Indicator & Original Toggle */}
-                  {currentLanguage !== 'en' && (
-                    <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-stone-200/20 text-stone-400">
-                      <span className="italic">
-                        {isShowingOriginal ? 'Showing original text' : t('translatedNotice')}
+            return (
+              <div
+                key={msg.id}
+                className="p-5 rounded-3xl border shadow-xs space-y-2 transition-all"
+                style={{
+                  borderColor: 'rgba(232, 168, 124, 0.2)',
+                  backgroundColor:
+                    timeOfDay === 'night' ? '#29221C' : '#FAF6F2',
+                }}
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-serif font-semibold">{msg.senderName}</span>
+                    {/* Role & Consent Badge */}
+                    <span className={`text-[10px] font-serif px-2 py-0.5 rounded-full flex items-center gap-1 ${roleBadge.bg}`}>
+                      <BadgeCheck className="w-3 h-3" />
+                      {roleBadge.label}
+                    </span>
+                    {msg.traditionTag && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-500 font-serif">
+                        {msg.traditionTag}
                       </span>
-                      <button
-                        onClick={() =>
-                          setShowOriginalMap((prev) => ({
-                            ...prev,
-                            [msg.id]: !prev[msg.id],
-                          }))
-                        }
-                        className="underline hover:text-stone-600 font-serif"
-                      >
-                        {isShowingOriginal ? t('seeTranslation') : t('seeOriginal')}
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-stone-400 text-[11px]">
+                    <span>{msg.timestamp}</span>
+                    <button
+                      onClick={() => handleFlagMessage(msg.senderName, msg.content)}
+                      className="hover:text-rose-500 transition-colors p-1"
+                      title="Report violation of room covenant"
+                      aria-label="Report message"
+                    >
+                      <Flag className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+
+                <p className="font-serif text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+                  {displayContent}
+                </p>
+
+                {/* Translation Notice & Toggle */}
+                {hasTranslation && (
+                  <div className="pt-2 border-t border-stone-200/20 flex items-center justify-between text-[11px] text-stone-400">
+                    <span className="flex items-center gap-1">
+                      <Globe className="w-3 h-3 text-amber-500" />
+                      <span>{t('translatedNotice')}</span>
+                    </span>
+                    <button
+                      onClick={() =>
+                        setShowOriginalMap((prev) => ({
+                          ...prev,
+                          [msg.id]: !prev[msg.id],
+                        }))
+                      }
+                      className="text-stone-500 hover:text-amber-600 font-serif underline"
+                    >
+                      {isOriginalShown ? t('seeTranslation') : t('seeOriginal')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Expanding Message Composer */}
@@ -279,20 +360,25 @@ export const RoomsView: React.FC = () => {
             value={messageInput}
             onChange={handleInputChange}
             rows={2}
-            placeholder={`Offer a reflection or prayer in ${activeMode} mode...`}
+            placeholder={`Offer a reflection or prayer in ${activeMode} mode... (Respecting 60s slow mode and affirmative consent)`}
             className="w-full bg-transparent resize-none focus:outline-none text-sm font-serif leading-relaxed placeholder-stone-400"
           />
 
           <div className="flex items-center justify-between pt-2 border-t border-stone-200/20">
-            <label className="flex items-center gap-2 text-xs text-stone-500 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isAnonymous}
-                onChange={(e) => setIsAnonymous(e.target.checked)}
-                className="rounded text-amber-600 focus:ring-amber-500"
-              />
-              <span>Offer Anonymously</span>
-            </label>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-xs text-stone-500 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="rounded text-amber-600 focus:ring-amber-500"
+                />
+                <span>Offer Anonymously</span>
+              </label>
+              <span className="text-[10px] text-stone-400 hidden sm:inline">
+                Posting as: <strong>{isAnonymous ? 'Anonymous' : userProfile.displayName}</strong>
+              </span>
+            </div>
 
             <button
               type="submit"
@@ -308,6 +394,140 @@ export const RoomsView: React.FC = () => {
             </button>
           </div>
         </form>
+
+        {/* Room Moderation Policies & Queue Modal */}
+        {isModerationModalOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md"
+            style={{ backgroundColor: 'rgba(28, 22, 18, 0.85)' }}
+          >
+            <div
+              className="w-full max-w-xl rounded-3xl p-6 border shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+              style={{
+                backgroundColor: timeOfDay === 'night' ? '#2A231D' : '#FAF6F0',
+                borderColor: currentTone.primary,
+                color: timeOfDay === 'night' ? '#F9F4EF' : '#2C2520',
+              }}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-stone-200/20">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-amber-500" />
+                  <h3 className="font-serif text-lg font-normal m-0">Room Moderation Policies & Reporting Queue</h3>
+                </div>
+                <button onClick={() => setIsModerationModalOpen(false)} className="p-1 rounded-full hover:bg-stone-500/20">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Active Thresholds Section */}
+              <div className="p-4 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-2.5 text-xs">
+                <span className="font-serif font-semibold block text-stone-700 dark:text-stone-200">
+                  Active Circle Thresholds
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-xl border border-stone-300/30">
+                    <span className="font-medium block">Slow Mode Pause</span>
+                    <select
+                      value={slowModeSeconds}
+                      onChange={(e) => setSlowModeSeconds(Number(e.target.value))}
+                      className="bg-transparent text-[11px] font-mono mt-1 border border-stone-300/40 rounded px-1.5 py-0.5"
+                    >
+                      <option value={30}>30s pause</option>
+                      <option value={60}>60s pause</option>
+                      <option value={120}>120s pause</option>
+                    </select>
+                  </div>
+                  <div className="p-2.5 rounded-xl border border-stone-300/30">
+                    <span className="font-medium block">Affirmative Consent</span>
+                    <label className="flex items-center gap-1.5 text-[11px] mt-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={requireConsentPledge}
+                        onChange={(e) => setRequireConsentPledge(e.target.checked)}
+                        className="rounded text-amber-600"
+                      />
+                      <span>Mandatory Pledge</span>
+                    </label>
+                  </div>
+                  <div className="p-2.5 rounded-xl border border-stone-300/30">
+                    <span className="font-medium block">Automated PHI Scanner</span>
+                    <span className="text-[11px] text-emerald-600">Active (HIPAA Safe)</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl border border-stone-300/30">
+                    <span className="font-medium block">Commercial Solicitations</span>
+                    <span className="text-[11px] text-rose-600">Strictly Blocked</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reporting Queue Section */}
+              <div className="space-y-2 text-xs">
+                <span className="font-serif font-semibold block text-stone-700 dark:text-stone-200">
+                  Circle Reporting Queue ({reportedItems.filter((i) => i.status === 'pending').length} pending)
+                </span>
+                <div className="space-y-2">
+                  {reportedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 rounded-2xl border space-y-2"
+                      style={{
+                        borderColor: item.status === 'pending' ? 'rgba(232, 168, 124, 0.4)' : 'rgba(232, 168, 124, 0.1)',
+                        backgroundColor: timeOfDay === 'night' ? '#322A22' : '#FFFFFF',
+                      }}
+                    >
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-medium text-stone-600 dark:text-stone-300">
+                          From: {item.senderName} • Reason: <strong className="uppercase">{item.reason}</strong>
+                        </span>
+                        <span className="text-stone-400">{item.timestamp}</span>
+                      </div>
+                      <p className="font-serif italic text-stone-500 m-0">{item.snippet}</p>
+
+                      {item.status === 'pending' ? (
+                        <div className="flex items-center gap-2 pt-1 border-t border-stone-200/20">
+                          <button
+                            onClick={() => handleResolveReport(item.id, 'dismiss')}
+                            className="px-2.5 py-1 rounded-lg border border-stone-300/40 text-[11px] hover:bg-stone-500/10"
+                          >
+                            Dismiss
+                          </button>
+                          <button
+                            onClick={() => handleResolveReport(item.id, 'resolve')}
+                            className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px]"
+                          >
+                            Issue Gentle Reminder
+                          </button>
+                          <button
+                            onClick={() => handleResolveReport(item.id, 'mute')}
+                            className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px]"
+                          >
+                            Mute Participant
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-emerald-600 font-mono capitalize">
+                          Status: {item.status}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => setIsModerationModalOpen(false)}
+                  className="px-5 py-2 rounded-full font-serif text-xs font-semibold"
+                  style={{ backgroundColor: currentTone.primary, color: '#2C2520' }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -349,61 +569,70 @@ export const RoomsView: React.FC = () => {
                   setSelectedRoomId(room.id);
                 }
               }}
-              className="group p-5 rounded-3xl border shadow-xs hover:shadow-md cursor-pointer transition-all duration-300 hover:scale-102 flex flex-col justify-between"
+              className="p-6 rounded-3xl border cursor-pointer transition-all duration-300 hover:scale-102 flex flex-col justify-between shadow-xs"
               style={{
-                borderColor: 'rgba(232, 168, 124, 0.3)',
+                borderColor: 'rgba(232, 168, 124, 0.25)',
                 backgroundColor:
-                  timeOfDay === 'night' ? '#2A221C' : '#FFFDFB',
+                  timeOfDay === 'night' ? '#2F2620' : '#FFFFFF',
               }}
               aria-label={`Enter room: ${room.title}`}
             >
               <div className="space-y-3">
-                {/* Header with Circular motif and status */}
-                <div className="flex items-start justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-serif tracking-wider text-stone-400">
+                    {room.tradition}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {hasActivity && (
+                      <span
+                        className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                        title="Room is quietly active"
+                      />
+                    )}
+                    <span className="text-xs text-stone-400 font-mono">
+                      {room.memberCount} present
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                    className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center ${
                       hasActivity ? 'animate-breath' : ''
                     }`}
                     style={{
                       backgroundColor: `${currentTone.primary}20`,
-                      border: `1.5px solid ${currentTone.primary}`,
+                      border: `1px solid ${currentTone.primary}`,
                     }}
                   >
-                    {room.motif === 'vesica' ? (
-                      <VesicaPiscisSymbol size={32} color={currentTone.primary} />
+                    {room.motif === 'circle' ? (
+                      <ConcentricRings size={36} ringsCount={2} glowColor={currentTone.primary} />
+                    ) : room.motif === 'rings' ? (
+                      <ConcentricRings size={36} ringsCount={3} glowColor={currentTone.primary} />
                     ) : (
-                      <ConcentricRings size={32} ringsCount={2} glowColor={currentTone.primary} />
+                      <VesicaPiscisSymbol size={32} color={currentTone.primary} />
                     )}
                   </div>
-
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-stone-500/10 text-stone-400">
-                    {room.memberCount} members
-                  </span>
+                  <div>
+                    <h3 className="font-serif text-base font-normal leading-snug m-0">
+                      {room.title}
+                    </h3>
+                  </div>
                 </div>
 
-                <div>
-                  <span className="text-[10px] uppercase font-serif tracking-wider text-stone-400">
-                    {room.tradition}
-                  </span>
-                  <h3 className="font-serif text-base font-normal leading-snug group-hover:underline">
-                    {room.title}
-                  </h3>
-                  <p className="text-xs text-stone-500 mt-1 line-clamp-2 leading-relaxed">
-                    {room.description}
-                  </p>
-                </div>
+                <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed">
+                  {room.description}
+                </p>
               </div>
 
-              <div className="pt-4 mt-3 border-t border-stone-200/20 flex items-center justify-between text-xs">
-                <span className="text-[11px] text-stone-400 flex items-center gap-1">
-                  <MessageSquare className="w-3 h-3" />
-                  {room.recentMessages.length} reflections
+              <div className="pt-4 mt-4 border-t border-stone-200/20 flex items-center justify-between text-xs text-stone-400">
+                <span className="flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                  Moderated
                 </span>
-                <span
-                  className="font-serif font-medium text-xs group-hover:translate-x-1 transition-transform"
-                  style={{ color: currentTone.primary }}
-                >
-                  Enter Room →
+                <span className="font-serif hover:underline flex items-center gap-1">
+                  Enter Sanctuary
+                  <MessageSquare className="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>

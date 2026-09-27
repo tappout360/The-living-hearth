@@ -90,18 +90,74 @@ export interface RoomMessage {
   translatedContent?: Record<LanguageCode, string>;
 }
 
+export type PrayerDestination = 'journal' | 'person' | 'room' | 'public_board';
+export type PrayerReminderInterval = 'none' | 'daily' | 'weekly' | 'evening';
+
+export interface PrayerResponse {
+  id: string;
+  responderName: string;
+  content: string;
+  timestamp: string;
+  sourceLanguage?: LanguageCode;
+  isAnonymous: boolean;
+  visibility: 'private_to_sender' | 'room_visible';
+}
+
 export interface PrayerIntention {
   id: string;
   type: 'private' | 'direct' | 'room';
+  destinationType: PrayerDestination;
   title: string;
   content: string;
   sourceLanguage?: LanguageCode;
+  translatedContent?: Record<LanguageCode, string>;
   recipientName?: string;
+  senderName?: string;
   consentGranted?: boolean;
   roomName?: string;
   isAnonymous: boolean;
   timestamp: string;
   traditionOrPath?: string;
+  privateReminder?: PrayerReminderInterval;
+  queuedOffline?: boolean;
+  responses?: PrayerResponse[];
+}
+
+export type InvitationType = 'room' | 'connection' | 'prayer' | 'learning';
+export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'muted';
+
+export interface Invitation {
+  id: string;
+  senderName: string;
+  recipientName: string;
+  type: InvitationType;
+  targetId: string;
+  targetTitle: string;
+  personalNote?: string;
+  timestamp: string;
+  status: InvitationStatus;
+  sourceLanguage?: LanguageCode;
+}
+
+export interface InvitationPreferences {
+  policy: 'all' | 'connections_only' | 'review_all' | 'off';
+  allowRoomInvites: boolean;
+  allowPrayerInvites: boolean;
+  allowConnectionRequests: boolean;
+  allowLearningShares: boolean;
+}
+
+export type TraditionFilterScope = 'learning' | 'rooms' | 'both';
+
+export interface UserFaithProfile {
+  displayName: string;
+  showNameInPublicRooms: boolean;
+  primaryTradition: string;
+  secondaryTraditions: string[];
+  sameTraditionOnly: boolean;
+  sameTraditionScope: TraditionFilterScope;
+  hasSeenTraditionFilterNotice: boolean;
+  isReflectionDismissed: boolean;
 }
 
 export type PathLevelName = 'Beginner' | 'Intermediate' | 'Deeper Exploration';
