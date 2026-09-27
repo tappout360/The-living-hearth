@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
 import { HearthFlameGlow } from './SacredGeometry';
+import { ambientAudio } from '../audio/ambientAudioEngine';
 import {
   Sparkles,
   Lock,
@@ -20,6 +21,7 @@ export const PrayComposerModal: React.FC = () => {
     timeOfDay,
     addPrayer,
     rooms,
+    ambientSettings,
     scanForPhiAndSafety,
   } = useHearth();
 
@@ -126,11 +128,19 @@ export const PrayComposerModal: React.FC = () => {
       >
         {/* Soft rising-light confirmation screen on submit */}
         {isSubmittedSuccess ? (
-          <div className="py-16 text-center space-y-4 animate-in zoom-in-95 duration-500">
-            <div className="flex justify-center">
-              <HearthFlameGlow size={84} color={currentTone.primary} />
+          <div className="py-16 text-center space-y-4 animate-in zoom-in-95 duration-500 relative">
+            {/* Single rising particle of light that travels upward and dissolves */}
+            <div className="relative flex justify-center items-center h-24">
+              <div
+                className="w-6 h-6 rounded-full blur-xs animate-ping opacity-60"
+                style={{ backgroundColor: currentTone.primary }}
+              />
+              <div
+                className="absolute w-3 h-3 rounded-full bg-white shadow-xl animate-bounce"
+                style={{ animationDuration: '2.5s' }}
+              />
             </div>
-            <h3 className="font-serif text-2xl font-normal">
+            <h3 className="font-serif text-2xl font-normal m-0">
               Intention Held in the Hearth
             </h3>
             <p className="text-sm text-stone-500 max-w-md mx-auto font-serif italic">
@@ -296,6 +306,8 @@ export const PrayComposerModal: React.FC = () => {
                 <textarea
                   value={content}
                   onChange={handleContentChange}
+                  onFocus={() => ambientSettings.fadeOnInteraction && ambientAudio.fadeForInteraction(true)}
+                  onBlur={() => ambientSettings.fadeOnInteraction && ambientAudio.fadeForInteraction(false)}
                   rows={5}
                   placeholder="Pour your heart onto this quiet paper surface... (Dynamic type and screen readers fully supported)"
                   className="w-full p-4 rounded-3xl bg-stone-500/5 border border-stone-200/30 text-base font-serif leading-relaxed placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-amber-400 shadow-inner"

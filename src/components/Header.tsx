@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
 import { HearthFlameGlow } from './SacredGeometry';
+import { AmbientAudioBar } from './AmbientAudioBar';
+import { LanguageSelectorModal } from './LanguageSelectorModal';
+import { SUPPORTED_LANGUAGES } from '../i18n/languages';
 import {
   Sun,
   Moon,
@@ -11,6 +14,7 @@ import {
   Eye,
   PhoneCall,
   X,
+  Globe,
 } from 'lucide-react';
 import type { HearthTone, TimeOfDay } from '../types';
 
@@ -21,9 +25,13 @@ export const Header: React.FC = () => {
     setIsAutoTime,
     hearthTone,
     setHearthTone,
+    currentLanguage,
+    t,
     accessibility,
     setAccessibility,
     setIsOnboardingOpen,
+    isLanguageModalOpen,
+    setIsLanguageModalOpen,
   } = useHearth();
 
   const [isA11yOpen, setIsA11yOpen] = useState(false);
@@ -31,6 +39,7 @@ export const Header: React.FC = () => {
   const [isTonePickerOpen, setIsTonePickerOpen] = useState(false);
 
   const currentTone = HEARTH_TONES[hearthTone];
+  const activeLangConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
 
   const getTimeIcon = (t: TimeOfDay) => {
     switch (t) {
@@ -74,17 +83,36 @@ export const Header: React.FC = () => {
                     color: timeOfDay === 'night' ? '#F9F4EF' : '#2C2520',
                   }}
                 >
-                  The Living Hearth
+                  {t('appTitle')}
                 </h1>
                 <p className="text-xs text-stone-500 tracking-wider uppercase font-sans">
-                  Sacred Sanctuary
+                  {t('sanctuarySubtitle')}
                 </p>
               </div>
             </button>
           </div>
 
-          {/* Controls: Time of Day, Tone, HIPAA Shield, Accessibility */}
-          <div className="flex items-center gap-2">
+          {/* Controls: Language, Ambient Sound, Time of Day, Tone, HIPAA Shield, Accessibility */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Global Language Selector Trigger */}
+            <button
+              onClick={() => setIsLanguageModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all"
+              style={{
+                borderColor: currentTone.primary,
+                backgroundColor: timeOfDay === 'night' ? '#3B332B' : '#FFFFFF',
+                color: timeOfDay === 'night' ? '#F9F4EF' : '#2C2520',
+              }}
+              title="Global Language & Sacred Communication"
+              aria-label={`Current language: ${activeLangConfig.name}. Open language selection.`}
+            >
+              <Globe className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-[11px] font-serif">{activeLangConfig.nativeName}</span>
+            </button>
+
+            {/* Ambient Audio Bar */}
+            <AmbientAudioBar />
+
             {/* Time of Day Cycle Button */}
             <div className="relative">
               <button
@@ -425,6 +453,12 @@ export const Header: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Global Language & Sacred Communication Modal */}
+      <LanguageSelectorModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+      />
     </>
   );
 };

@@ -10,6 +10,7 @@ export const Navigation: React.FC = () => {
     setActiveTab,
     timeOfDay,
     hearthTone,
+    t,
     setIsPrayComposerOpen,
   } = useHearth();
 
@@ -42,7 +43,7 @@ export const Navigation: React.FC = () => {
           aria-current={activeTab === 'dashboard' ? 'page' : undefined}
         >
           <LayoutDashboard className="w-5 h-5 mb-1" />
-          <span className="text-[11px] tracking-tight">Dashboard</span>
+          <span className="text-[11px] tracking-tight">{t('navDashboard')}</span>
         </button>
 
         {/* Rooms */}
@@ -58,7 +59,7 @@ export const Navigation: React.FC = () => {
           aria-current={activeTab === 'rooms' ? 'page' : undefined}
         >
           <Users className="w-5 h-5 mb-1" />
-          <span className="text-[11px] tracking-tight">Rooms</span>
+          <span className="text-[11px] tracking-tight">{t('navRooms')}</span>
         </button>
 
         {/* Floating Pray Button (Sacred Center) */}
@@ -87,7 +88,7 @@ export const Navigation: React.FC = () => {
             className="text-[10px] font-serif font-medium mt-1 uppercase tracking-widest"
             style={{ color: currentTone.primary }}
           >
-            Pray
+            {t('navPray')}
           </span>
         </div>
 
@@ -104,7 +105,7 @@ export const Navigation: React.FC = () => {
           aria-current={activeTab === 'learn' ? 'page' : undefined}
         >
           <BookOpen className="w-5 h-5 mb-1" />
-          <span className="text-[11px] tracking-tight">Learn</span>
+          <span className="text-[11px] tracking-tight">{t('navLearn')}</span>
         </button>
 
         {/* Profile / Safety */}
@@ -120,7 +121,7 @@ export const Navigation: React.FC = () => {
           aria-current={activeTab === 'profile' ? 'page' : undefined}
         >
           <User className="w-5 h-5 mb-1" />
-          <span className="text-[11px] tracking-tight">Profile</span>
+          <span className="text-[11px] tracking-tight">{t('navProfile')}</span>
         </button>
       </div>
     </nav>

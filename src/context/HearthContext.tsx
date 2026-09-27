@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
   TimeOfDay,
   HearthTone,
+  LanguageCode,
+  AmbientAudioSettings,
+  VisualAtmosphereSettings,
   AccessibilitySettings,
   ComplianceState,
   Room,
@@ -9,6 +12,8 @@ import type {
   LearningModule,
 } from '../types';
 import { HEARTH_TONES, INITIAL_ROOMS, INITIAL_PRAYERS, INITIAL_LEARNING_MODULES } from '../data/mockData';
+import { UI_TRANSLATIONS, SUPPORTED_LANGUAGES } from '../i18n/languages';
+import { ambientAudio } from '../audio/ambientAudioEngine';
 
 interface HearthContextType {
   timeOfDay: TimeOfDay;
@@ -17,6 +22,13 @@ interface HearthContextType {
   setIsAutoTime: (auto: boolean) => void;
   hearthTone: HearthTone;
   setHearthTone: (tone: HearthTone) => void;
+  currentLanguage: LanguageCode;
+  setCurrentLanguage: (lang: LanguageCode) => void;
+  t: (key: string) => string;
+  ambientSettings: AmbientAudioSettings;
+  setAmbientSettings: React.Dispatch<React.SetStateAction<AmbientAudioSettings>>;
+  visualSettings: VisualAtmosphereSettings;
+  setVisualSettings: React.Dispatch<React.SetStateAction<VisualAtmosphereSettings>>;
   accessibility: AccessibilitySettings;
   setAccessibility: React.Dispatch<React.SetStateAction<AccessibilitySettings>>;
   activeTab: 'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile';
@@ -26,7 +38,7 @@ interface HearthContextType {
   setSelectedRoomId: (id: string | null) => void;
   addRoomMessage: (roomId: string, content: string, mode: 'Practice' | 'Learning' | 'Discussion', isAnonymous: boolean) => void;
   prayers: PrayerIntention[];
-  addPrayer: (prayer: Omit<PrayerIntention, 'id' | 'timestamp'>) => void;
+  addPrayer: (prayer: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage'>) => void;
   learningModules: LearningModule[];
   selectedLearningId: string | null;
   setSelectedLearningId: (id: string | null) => void;
@@ -36,6 +48,8 @@ interface HearthContextType {
   setIsOnboardingOpen: (open: boolean) => void;
   isPrayComposerOpen: boolean;
   setIsPrayComposerOpen: (open: boolean) => void;
+  isLanguageModalOpen: boolean;
+  setIsLanguageModalOpen: (open: boolean) => void;
   exportUserData: () => void;
   purgeUserData: () => void;
 }
@@ -58,7 +72,6 @@ const SOLICITATION_KEYWORDS = [
 ];
 
 export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Determine initial time of day from local hour
   const getInitialTimeOfDay = (): TimeOfDay => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 10) return 'dawn';
@@ -70,7 +83,24 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getInitialTimeOfDay());
   const [isAutoTime, setIsAutoTime] = useState<boolean>(true);
   const [hearthTone, setHearthTone] = useState<HearthTone>('ember');
-  
+  const [currentLanguage, setCurrentLanguageState] = useState<LanguageCode>('en');
+
+  // Ambient sound state
+  const [ambientSettings, setAmbientSettings] = useState<AmbientAudioSettings>({
+    isEnabled: false,
+    volume: 0.35,
+    fadeOnInteraction: true,
+    activeProfile: 'contemplative',
+    perRoomMuted: {},
+  });
+
+  // Visual atmosphere state
+  const [visualSettings, setVisualSettings] = useState<VisualAtmosphereSettings>({
+    breathingIntensity: 'gentle',
+    lightFieldActive: true,
+    floatingGeometryActive: true,
+  });
+
   const [accessibility, setAccessibility] = useState<AccessibilitySettings>({
     fontSizePercent: 100,
     highContrast: false,
@@ -78,13 +108,22 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile'>('dashboard');
-  const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
+  const [rooms, setRooms] = useState<Room[]>(
+    INITIAL_ROOMS.map((r) => ({
+      ...r,
+      atmosphereProfile: r.motif === 'circle' ? 'contemplative' : r.motif === 'rings' ? 'nature' : 'study',
+      recentMessages: r.recentMessages.map((m) => ({ ...m, sourceLanguage: 'en' })),
+    }))
+  );
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [prayers, setPrayers] = useState<PrayerIntention[]>(INITIAL_PRAYERS);
+  const [prayers, setPrayers] = useState<PrayerIntention[]>(
+    INITIAL_PRAYERS.map((p) => ({ ...p, sourceLanguage: 'en' }))
+  );
   const [learningModules, setLearningModules] = useState<LearningModule[]>(INITIAL_LEARNING_MODULES);
   const [selectedLearningId, setSelectedLearningId] = useState<string | null>(null);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [isPrayComposerOpen, setIsPrayComposerOpen] = useState<boolean>(false);
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState<boolean>(false);
 
   const [compliance] = useState<ComplianceState>({
     hipaaSafetyActive: true,
@@ -92,6 +131,22 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     trackersBlockedCount: 0,
     encryptionStatus: 'AES-256-LocalVault',
   });
+
+  // Language setter with document dir & lang update
+  const setCurrentLanguage = (lang: LanguageCode) => {
+    setCurrentLanguageState(lang);
+    const langObj = SUPPORTED_LANGUAGES.find((l) => l.code === lang);
+    if (langObj) {
+      document.documentElement.lang = langObj.code;
+      document.documentElement.dir = langObj.dir;
+    }
+  };
+
+  // Translation helper
+  const t = (key: string): string => {
+    const dict = UI_TRANSLATIONS[currentLanguage] || UI_TRANSLATIONS.en;
+    return dict[key] || UI_TRANSLATIONS.en[key] || key;
+  };
 
   // Auto-time syncing
   useEffect(() => {
@@ -113,10 +168,23 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (accessibility.reducedMotion) {
       document.body.classList.add('reduced-motion');
+      // Dim ambient sound if reduced motion is requested
+      ambientAudio.fadeForInteraction(true);
     } else {
       document.body.classList.remove('reduced-motion');
+      ambientAudio.fadeForInteraction(false);
     }
   }, [hearthTone, accessibility]);
+
+  // Room atmosphere shift
+  useEffect(() => {
+    if (selectedRoomId) {
+      const room = rooms.find((r) => r.id === selectedRoomId);
+      if (room && ambientSettings.isEnabled) {
+        ambientAudio.switchProfile(room.atmosphereProfile || 'contemplative');
+      }
+    }
+  }, [selectedRoomId, ambientSettings.isEnabled, rooms]);
 
   // PHI & Anti-solicitation scanner
   const scanForPhiAndSafety = (text: string) => {
@@ -140,6 +208,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       senderName: isAnonymous ? 'Hearth Companion (Anonymous)' : 'You',
       isAnonymous,
       content,
+      sourceLanguage: currentLanguage,
       timestamp: 'Just now',
       mode,
     };
@@ -148,10 +217,11 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
-  const addPrayer = (prayerData: Omit<PrayerIntention, 'id' | 'timestamp'>) => {
+  const addPrayer = (prayerData: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage'>) => {
     const newPrayer: PrayerIntention = {
       ...prayerData,
       id: `prayer-${Date.now()}`,
+      sourceLanguage: currentLanguage,
       timestamp: 'Just now',
     };
     setPrayers((prev) => [newPrayer, ...prev]);
@@ -161,6 +231,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const data = {
       exportTimestamp: new Date().toISOString(),
       complianceStatement: 'HIPAA & Federal Data Portability Guarantee - Client Controlled Sanctuary Archive',
+      language: currentLanguage,
       hearthTone,
       prayers,
       savedLearning: learningModules.filter((m) => m.progressPercent > 0),
@@ -189,6 +260,13 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsAutoTime,
         hearthTone,
         setHearthTone,
+        currentLanguage,
+        setCurrentLanguage,
+        t,
+        ambientSettings,
+        setAmbientSettings,
+        visualSettings,
+        setVisualSettings,
         accessibility,
         setAccessibility,
         activeTab,
@@ -208,6 +286,8 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsOnboardingOpen,
         isPrayComposerOpen,
         setIsPrayComposerOpen,
+        isLanguageModalOpen,
+        setIsLanguageModalOpen,
         exportUserData,
         purgeUserData,
       }}

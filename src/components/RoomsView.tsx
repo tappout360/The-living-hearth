@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
 import { ConcentricRings, VesicaPiscisSymbol } from './SacredGeometry';
+import { translateSpiritualText } from '../i18n/languages';
 import {
   Users,
   Shield,
@@ -11,6 +12,8 @@ import {
   AlertTriangle,
   Flag,
   CheckCircle,
+  Globe,
+  Volume2,
 } from 'lucide-react';
 
 export const RoomsView: React.FC = () => {
@@ -21,6 +24,8 @@ export const RoomsView: React.FC = () => {
     addRoomMessage,
     hearthTone,
     timeOfDay,
+    currentLanguage,
+    t,
     scanForPhiAndSafety,
   } = useHearth();
 
@@ -33,6 +38,7 @@ export const RoomsView: React.FC = () => {
   const [safetyNotice, setSafetyNotice] = useState<string | null>(null);
   const [sentSuccessNotification, setSentSuccessNotification] = useState(false);
   const [reportedMessageId, setReportedMessageId] = useState<string | null>(null);
+  const [showOriginalMap, setShowOriginalMap] = useState<Record<string, boolean>>({});
 
   // Check safety/HIPAA/solicitation as user types
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -94,10 +100,17 @@ export const RoomsView: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="text-[11px] uppercase tracking-wider font-serif text-stone-400">
-                {selectedRoom.tradition}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] uppercase tracking-wider font-serif text-stone-400">
+                  {selectedRoom.tradition}
+                </span>
+                <span className="text-stone-300">•</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-400 font-serif flex items-center gap-1">
+                  <Volume2 className="w-3 h-3 text-amber-500" />
+                  Atmosphere: {selectedRoom.atmosphereProfile} drone
+                </span>
               </div>
-              <h2 className="font-serif text-2xl font-normal leading-snug m-0">
+              <h2 className="font-serif text-2xl font-normal leading-snug m-0 mt-1">
                 {selectedRoom.title}
               </h2>
               <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-xl">
@@ -150,56 +163,90 @@ export const RoomsView: React.FC = () => {
 
         {/* Message Stream */}
         <div className="space-y-3">
-          <div className="text-xs font-serif text-stone-400 px-2">
-            Messages in {activeMode} Mode ({selectedRoom.recentMessages.filter(m => m.mode === activeMode).length})
+          <div className="flex items-center justify-between text-xs font-serif text-stone-400 px-2">
+            <span>
+              Messages in {activeMode} Mode ({selectedRoom.recentMessages.filter(m => m.mode === activeMode).length})
+            </span>
+            {currentLanguage !== 'en' && (
+              <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                <Globe className="w-3 h-3" />
+                Live Translation Active ({currentLanguage.toUpperCase()})
+              </span>
+            )}
           </div>
 
           {selectedRoom.recentMessages
             .filter((m) => m.mode === activeMode)
-            .map((msg) => (
-              <div
-                key={msg.id}
-                className="p-4 rounded-3xl border transition-all space-y-2 relative"
-                style={{
-                  borderColor: 'rgba(232, 168, 124, 0.2)',
-                  backgroundColor:
-                    timeOfDay === 'night' ? '#27201A' : '#FFFDFB',
-                }}
-              >
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-serif font-medium">{msg.senderName}</span>
-                    {msg.traditionTag && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-500">
-                        {msg.traditionTag}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-stone-400">
-                    <span>{msg.timestamp}</span>
-                    {reportedMessageId === msg.id ? (
-                      <span className="text-rose-500 font-mono text-[10px]">Reported to Moderators</span>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setReportedMessageId(msg.id);
-                          alert('Message reported to human moderators for review. Thank you for safeguarding our community.');
-                        }}
-                        className="hover:text-stone-600 p-0.5"
-                        title="Report inappropriate content or solicitation"
-                        aria-label="Report message to moderators"
-                      >
-                        <Flag className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
+            .map((msg) => {
+              const isShowingOriginal = showOriginalMap[msg.id];
+              const translation = translateSpiritualText(msg.content, currentLanguage);
+              const displayContent = isShowingOriginal || currentLanguage === 'en' ? msg.content : translation.translated;
 
-                <p className="font-serif text-sm leading-relaxed text-stone-700 dark:text-stone-200">
-                  {msg.content}
-                </p>
-              </div>
-            ))}
+              return (
+                <div
+                  key={msg.id}
+                  className="p-4 rounded-3xl border transition-all space-y-2 relative"
+                  style={{
+                    borderColor: 'rgba(232, 168, 124, 0.2)',
+                    backgroundColor:
+                      timeOfDay === 'night' ? '#27201A' : '#FFFDFB',
+                  }}
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif font-medium">{msg.senderName}</span>
+                      {msg.traditionTag && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-500">
+                          {msg.traditionTag}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-stone-400">
+                      <span>{msg.timestamp}</span>
+                      {reportedMessageId === msg.id ? (
+                        <span className="text-rose-500 font-mono text-[10px]">Reported to Moderators</span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setReportedMessageId(msg.id);
+                            alert('Message reported to human moderators for review. Thank you for safeguarding our community.');
+                          }}
+                          className="hover:text-stone-600 p-0.5"
+                          title="Report inappropriate content or solicitation"
+                          aria-label="Report message to moderators"
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="font-serif text-sm leading-relaxed text-stone-700 dark:text-stone-200">
+                    {displayContent}
+                  </p>
+
+                  {/* Cross-Language Translation Indicator & Original Toggle */}
+                  {currentLanguage !== 'en' && (
+                    <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-stone-200/20 text-stone-400">
+                      <span className="italic">
+                        {isShowingOriginal ? 'Showing original text' : t('translatedNotice')}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setShowOriginalMap((prev) => ({
+                            ...prev,
+                            [msg.id]: !prev[msg.id],
+                          }))
+                        }
+                        className="underline hover:text-stone-600 font-serif"
+                      >
+                        {isShowingOriginal ? t('seeTranslation') : t('seeOriginal')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
 
         {/* Expanding Message Composer */}

@@ -8,10 +8,15 @@ import { LearningView } from './components/LearningView';
 import { ProfileSafetyView } from './components/ProfileSafetyView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { PrayComposerModal } from './components/PrayComposerModal';
+import { LivingLightField } from './components/LivingLightField';
+import { SUPPORTED_LANGUAGES } from './i18n/languages';
 import './App.css';
 
 const MainSanctuary: React.FC = () => {
-  const { timeOfDay, activeTab, accessibility } = useHearth();
+  const { timeOfDay, activeTab, accessibility, currentLanguage } = useHearth();
+
+  const activeLangConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
+  const isRTL = activeLangConfig.dir === 'rtl';
 
   // Dynamic time-of-day background color mapping
   const getBackgroundColor = () => {
@@ -34,21 +39,37 @@ const MainSanctuary: React.FC = () => {
     return timeOfDay === 'night' ? '#F9F4EF' : '#2C2520';
   };
 
+  const getAtmosphereMode = () => {
+    switch (activeTab) {
+      case 'learn':
+        return 'learning';
+      case 'rooms':
+        return 'practice';
+      case 'dashboard':
+      default:
+        return 'dashboard';
+    }
+  };
+
   return (
     <div
-      className="min-h-screen flex flex-col transition-colors duration-700 font-sans"
+      dir={isRTL ? 'rtl' : 'ltr'}
+      className="min-h-screen flex flex-col transition-colors duration-700 font-sans relative"
       style={{
         backgroundColor: getBackgroundColor(),
         color: getTextColor(),
         fontSize: `${accessibility.fontSizePercent}%`,
       }}
     >
+      {/* Abstract Living Light Field Background with Room-Specific Atmospheric Layer */}
+      <LivingLightField atmosphereMode={getAtmosphereMode()} />
+
       <Header />
 
       {/* Main Content Area bounded to Sacred Golden Proportion max-w (720px - 820px) */}
       <main
         role="main"
-        className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 pt-6 pb-28 focus:outline-none"
+        className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 pt-6 pb-28 focus:outline-none relative z-10"
         tabIndex={-1}
       >
         {activeTab === 'dashboard' && <DashboardView />}
