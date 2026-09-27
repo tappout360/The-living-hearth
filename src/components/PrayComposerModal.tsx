@@ -113,8 +113,8 @@ export const PrayComposerModal: React.FC = () => {
     setIsPreviewMode(true);
   };
 
-  const handleFinalSubmit = () => {
-    const result = addPrayer({
+  const handleFinalSubmit = async () => {
+    const result = await addPrayer({
       type: destination === 'journal' ? 'private' : destination === 'person' ? 'direct' : 'room',
       destinationType: destination,
       title: title.trim() || (destination === 'journal' ? 'Quiet Journal Reflection' : 'Heartfelt Intention'),

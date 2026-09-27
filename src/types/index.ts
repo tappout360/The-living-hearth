@@ -121,6 +121,8 @@ export interface PrayerIntention {
   privateReminder?: PrayerReminderInterval;
   queuedOffline?: boolean;
   responses?: PrayerResponse[];
+  isEncrypted?: boolean;
+  encryptedPayload?: string;
 }
 
 export type InvitationType = 'room' | 'connection' | 'prayer' | 'learning';
@@ -253,3 +255,15 @@ export interface ComplianceState {
   trackersBlockedCount: number;
   encryptionStatus: 'AES-256-LocalVault' | 'TLS-1.3';
 }
+
+export type AuthMode = 'anonymous_vault' | 'passphrase_vault';
+
+export interface SanctuaryAuthSession {
+  mode: AuthMode;
+  handle: string;
+  fingerprint: string;
+  isUnlocked: boolean;
+  createdAt: string;
+  lastActiveAt: string;
+}
+

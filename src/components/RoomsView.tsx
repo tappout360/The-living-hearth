@@ -199,7 +199,11 @@ export const RoomsView: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 text-xs font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Live Sync</span>
+              </div>
               <div className="p-3 rounded-2xl bg-amber-500/10 flex items-center gap-2 text-xs">
                 <Users className="w-4 h-4 text-amber-600" />
                 <span className="font-medium">{selectedRoom.memberCount} present</span>

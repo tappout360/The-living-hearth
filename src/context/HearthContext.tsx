@@ -15,6 +15,7 @@ import type {
   TraditionFilterScope,
   UserFaithProfile,
   LearningModule,
+  SanctuaryAuthSession,
 } from '../types';
 import {
   HEARTH_TONES,
@@ -25,6 +26,10 @@ import {
 } from '../data/mockData';
 import { UI_TRANSLATIONS, SUPPORTED_LANGUAGES } from '../i18n/languages';
 import { ambientAudio } from '../audio/ambientAudioEngine';
+import { SanctuaryAuthService } from '../auth/sanctuaryAuth';
+import { syncEngine, type SyncPayload } from '../sync/broadcastEngine';
+import { encryptText, decryptPayload, type EncryptedVaultPayload } from '../crypto/vaultCrypto';
+
 
 interface HearthContextType {
   // Lighting & Theme
@@ -70,9 +75,22 @@ interface HearthContextType {
   setSelectedRoomId: (id: string | null) => void;
   addRoomMessage: (roomId: string, content: string, mode: 'Practice' | 'Learning' | 'Discussion', isAnonymous: boolean) => void;
 
+  // Sovereign Sanctuary Auth & Web Crypto Vault
+  authSession: SanctuaryAuthSession | null;
+  isVaultUnlocked: boolean;
+  setupPassphraseVault: (handle: string, passphrase: string) => Promise<boolean>;
+  unlockVault: (passphrase: string) => Promise<boolean>;
+  lockVault: () => void;
+  switchToGuestVault: () => Promise<void>;
+
+  // Multi-Client Live Sync
+  isLiveSyncActive: boolean;
+  lastSyncNotice: string | null;
+  clearSyncNotice: () => void;
+
   // Prayers / Intentions
   prayers: PrayerIntention[];
-  addPrayer: (prayer: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>) => { queued: boolean; error?: string };
+  addPrayer: (prayer: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>) => Promise<{ queued: boolean; error?: string }>;
   activePrayerDetail: PrayerIntention | null;
   setActivePrayerDetail: (prayer: PrayerIntention | null) => void;
   respondToPrayer: (prayerId: string, content: string, isAnonymous: boolean, visibility: 'private_to_sender' | 'room_visible') => void;
@@ -216,6 +234,25 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem('hearth_user_profile', JSON.stringify(userProfile));
   }, [userProfile]);
+
+  // Sovereign Sanctuary Auth & Vault State
+  const [authSession, setAuthSession] = useState<SanctuaryAuthSession | null>(null);
+  const [isVaultUnlocked, setIsVaultUnlocked] = useState<boolean>(true);
+  const [isLiveSyncActive] = useState<boolean>(true);
+  const [lastSyncNotice, setLastSyncNotice] = useState<string | null>(null);
+
+  const clearSyncNotice = () => setLastSyncNotice(null);
+
+  // Initialize Sovereign Session on mount
+  useEffect(() => {
+    SanctuaryAuthService.initSession().then(({ session }) => {
+      setAuthSession(session);
+      setIsVaultUnlocked(session.isUnlocked);
+      if (session.handle && session.handle !== 'Sovereign Pilgrim' && !session.handle.startsWith('Pilgrim-')) {
+        setUserProfile((prev) => ({ ...prev, displayName: session.handle }));
+      }
+    });
+  }, []);
 
   const updateDisplayName = (name: string) => {
     setUserProfile((prev) => ({ ...prev, displayName: name.trim() || 'Hearth Companion' }));
@@ -460,6 +497,128 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
+  // Multi-Client Sync Subscription via BroadcastChannel
+  useEffect(() => {
+    const unsubscribe = syncEngine.subscribe((payload: SyncPayload) => {
+      if (payload.type === 'ROOM_MESSAGE') {
+        setRooms((prev) =>
+          prev.map((r) => {
+            if (r.id === payload.roomId) {
+              if (r.recentMessages.some((m) => m.id === payload.message.id)) return r;
+              return { ...r, recentMessages: [payload.message, ...r.recentMessages] };
+            }
+            return r;
+          })
+        );
+        setLastSyncNotice(`New reflection received in room circle`);
+      } else if (payload.type === 'PRAYER_INTENTION') {
+        setPrayers((prev) => {
+          if (prev.some((p) => p.id === payload.prayer.id)) return prev;
+          return [payload.prayer, ...prev];
+        });
+        setLastSyncNotice(`New prayer intention shared in sanctuary`);
+      } else if (payload.type === 'PRAYER_RESPONSE') {
+        setPrayers((prev) =>
+          prev.map((p) => {
+            if (p.id === payload.prayerId) {
+              if ((p.responses || []).some((r) => r.id === payload.response.id)) return p;
+              return { ...p, responses: [...(p.responses || []), payload.response] };
+            }
+            return p;
+          })
+        );
+        setLastSyncNotice(`A companion responded with prayer support`);
+      }
+    });
+
+    // Periodic heartbeat presence to keep rooms alive across windows
+    const interval = setInterval(() => {
+      syncEngine.broadcast({
+        type: 'PRESENCE_PING',
+        senderHandle: authSession?.handle || userProfile.displayName,
+        currentTab: activeTab,
+        activeRoomId: selectedRoomId,
+      });
+    }, 25000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [authSession?.handle, userProfile.displayName, activeTab, selectedRoomId]);
+
+  // Sovereign Vault Key & Auth Handlers
+  const setupPassphraseVault = async (handle: string, passphrase: string): Promise<boolean> => {
+    try {
+      const { session, key } = await SanctuaryAuthService.setupPassphraseVault(handle, passphrase);
+      setAuthSession(session);
+      setIsVaultUnlocked(true);
+      setUserProfile((prev) => ({ ...prev, displayName: session.handle }));
+
+      // Re-encrypt existing journal entries with the new derived key
+      const updatedPrayers = await Promise.all(
+        prayers.map(async (p) => {
+          if (p.destinationType === 'journal') {
+            const enc = await encryptText(p.content, key);
+            return {
+              ...p,
+              isEncrypted: true,
+              encryptedPayload: JSON.stringify(enc),
+            };
+          }
+          return p;
+        })
+      );
+      setPrayers(updatedPrayers);
+      return true;
+    } catch (e) {
+      console.error('Setup passphrase vault failed', e);
+      return false;
+    }
+  };
+
+  const unlockVault = async (passphrase: string): Promise<boolean> => {
+    const success = await SanctuaryAuthService.unlockVault(passphrase);
+    if (success) {
+      const activeKey = SanctuaryAuthService.getActiveKey();
+      setIsVaultUnlocked(true);
+      setAuthSession((prev) => (prev ? { ...prev, isUnlocked: true } : null));
+
+      // Decrypt any encrypted prayers in memory
+      if (activeKey) {
+        const decryptedPrayers = await Promise.all(
+          prayers.map(async (p) => {
+            if (p.isEncrypted && p.encryptedPayload) {
+              try {
+                const payload: EncryptedVaultPayload = JSON.parse(p.encryptedPayload);
+                const plaintext = await decryptPayload(payload, activeKey);
+                return { ...p, content: plaintext };
+              } catch (e) {
+                console.warn('Failed to decrypt prayer', e);
+              }
+            }
+            return p;
+          })
+        );
+        setPrayers(decryptedPrayers);
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const lockVault = () => {
+    const updatedSession = SanctuaryAuthService.lockVault();
+    setIsVaultUnlocked(false);
+    if (updatedSession) setAuthSession(updatedSession);
+  };
+
+  const switchToGuestVault = async () => {
+    const { session } = await SanctuaryAuthService.createAnonymousGuestVault();
+    setAuthSession(session);
+    setIsVaultUnlocked(true);
+  };
+
   // PHI & Anti-solicitation scanner
   const scanForPhiAndSafety = (text: string) => {
     const lower = text.toLowerCase();
@@ -476,10 +635,15 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { hasPhi, hasSolicitation, advice };
   };
 
-  const addRoomMessage = (roomId: string, content: string, mode: 'Practice' | 'Learning' | 'Discussion', isAnonymous: boolean) => {
+  const addRoomMessage = (
+    roomId: string,
+    content: string,
+    mode: 'Practice' | 'Learning' | 'Discussion',
+    isAnonymous: boolean
+  ) => {
     const newMessage = {
-      id: `msg-${Date.now()}`,
-      senderName: isAnonymous ? 'Hearth Companion (Anonymous)' : userProfile.displayName,
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      senderName: isAnonymous ? 'Hearth Companion (Anonymous)' : (authSession?.handle || userProfile.displayName),
       isAnonymous,
       content,
       sourceLanguage: currentLanguage,
@@ -489,9 +653,17 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setRooms((prev) =>
       prev.map((r) => (r.id === roomId ? { ...r, recentMessages: [newMessage, ...r.recentMessages] } : r))
     );
+    // Broadcast live across open tabs and windows
+    syncEngine.broadcast({
+      type: 'ROOM_MESSAGE',
+      roomId,
+      message: newMessage,
+    });
   };
 
-  const addPrayer = (prayerData: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>) => {
+  const addPrayer = async (
+    prayerData: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>
+  ): Promise<{ queued: boolean; error?: string }> => {
     // Check if recipient has blocked sender or turned off requests
     if (prayerData.destinationType === 'person' && prayerData.recipientName) {
       const rec = prayerData.recipientName.trim().toLowerCase();
@@ -504,18 +676,45 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const isOfflineMode = !navigator.onLine;
+    let isEncrypted = false;
+    let encryptedPayload: string | undefined = undefined;
+
+    // Encrypt private journal entries using active sovereign AES-GCM-256 key
+    if (prayerData.destinationType === 'journal') {
+      const activeKey = SanctuaryAuthService.getActiveKey();
+      if (activeKey && window.crypto?.subtle) {
+        try {
+          const encObj = await encryptText(prayerData.content, activeKey);
+          isEncrypted = true;
+          encryptedPayload = JSON.stringify(encObj);
+        } catch (e) {
+          console.warn('Vault encryption fallback', e);
+        }
+      }
+    }
 
     const newPrayer: PrayerIntention = {
       ...prayerData,
       id: `prayer-${Date.now()}`,
       sourceLanguage: currentLanguage,
-      senderName: userProfile.displayName,
+      senderName: authSession?.handle || userProfile.displayName,
       timestamp: isOfflineMode ? 'Saved offline (will sync)' : 'Just now',
       queuedOffline: isOfflineMode,
+      isEncrypted,
+      encryptedPayload,
       responses: [],
     };
 
     setPrayers((prev) => [newPrayer, ...prev]);
+
+    // Broadcast if shared outside private journal
+    if (newPrayer.destinationType !== 'journal') {
+      syncEngine.broadcast({
+        type: 'PRAYER_INTENTION',
+        prayer: newPrayer,
+      });
+    }
+
     return { queued: isOfflineMode };
   };
 
@@ -527,7 +726,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   ) => {
     const newResponse: PrayerResponse = {
       id: `resp-${Date.now()}`,
-      responderName: isAnonymous ? 'Compassionate Companion' : userProfile.displayName,
+      responderName: isAnonymous ? 'Compassionate Companion' : (authSession?.handle || userProfile.displayName),
       content,
       timestamp: 'Just now',
       sourceLanguage: currentLanguage,
@@ -557,6 +756,13 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           : null
       );
     }
+
+    // Broadcast response to other tabs/windows
+    syncEngine.broadcast({
+      type: 'PRAYER_RESPONSE',
+      prayerId,
+      response: newResponse,
+    });
   };
 
   const sendInvitation = (invData: Omit<Invitation, 'id' | 'timestamp' | 'status' | 'sourceLanguage'>) => {
@@ -608,7 +814,9 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const exportUserData = () => {
     const data = {
       exportTimestamp: new Date().toISOString(),
-      complianceStatement: 'HIPAA & Federal Data Portability Guarantee - Client Controlled Sanctuary Archive',
+      complianceStatement: 'HIPAA & Federal Data Portability Guarantee - Sovereign Client Sanctuary Archive',
+      keyFingerprint: authSession?.fingerprint || 'vault-sovereign',
+      vaultMode: authSession?.mode || 'anonymous_vault',
       language: currentLanguage,
       hearthTone,
       userProfile,
@@ -630,6 +838,10 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setInvitations([]);
     setLearningModules((prev) => prev.map((m) => ({ ...m, progressPercent: 0 })));
     localStorage.clear();
+    SanctuaryAuthService.createAnonymousGuestVault().then(({ session }) => {
+      setAuthSession(session);
+      setIsVaultUnlocked(true);
+    });
   };
 
   return (
@@ -660,6 +872,15 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toggleSameTraditionOnly,
         setSameTraditionScope,
         dismissReflection,
+        authSession,
+        isVaultUnlocked,
+        setupPassphraseVault,
+        unlockVault,
+        lockVault,
+        switchToGuestVault,
+        isLiveSyncActive,
+        lastSyncNotice,
+        clearSyncNotice,
         rooms,
         selectedRoomId,
         setSelectedRoomId,
