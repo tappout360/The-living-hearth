@@ -37,6 +37,7 @@ export const SacredOrientationCompass: React.FC<SacredOrientationCompassProps> =
     setOrientationHelperEnabled,
     setIsCorrectionModalOpen,
     setActiveCorrectionContext,
+    featureFlags,
   } = useHearth();
   const currentTone = HEARTH_TONES[hearthTone];
   const profile = propProfile || getTraditionPersonalizationProfile(userProfile.primaryTradition);
@@ -119,6 +120,10 @@ export const SacredOrientationCompass: React.FC<SacredOrientationCompassProps> =
       setIsCitySelectorOpen(false);
     }
   };
+
+  if (featureFlags && !featureFlags.enableOrientationHelper) {
+    return null;
+  }
 
   return (
     <div

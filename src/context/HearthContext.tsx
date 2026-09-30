@@ -41,6 +41,13 @@ import { ambientAudio } from '../audio/ambientAudioEngine';
 import { SanctuaryAuthService } from '../auth/sanctuaryAuth';
 import { syncEngine, type SyncPayload } from '../sync/broadcastEngine';
 import { encryptText, decryptPayload, cryptoShredMemory, type EncryptedVaultPayload } from '../crypto/vaultCrypto';
+import { evaluatePrayerConsent } from '../services/consentService';
+import { logger } from '../services/observability';
+import {
+  getFeatureFlags,
+  setFeatureFlag,
+  type HearthFeatureFlags,
+} from '../services/featureFlags';
 
 
 interface HearthContextType {
@@ -214,6 +221,10 @@ interface HearthContextType {
   setSpatialHeritageEnabled: (enabled: boolean) => void;
   isPersonalizationModalOpen: boolean;
   setIsPersonalizationModalOpen: (open: boolean) => void;
+
+  // Platform Feature Flags (Phase A4 & C1)
+  featureFlags: HearthFeatureFlags;
+  toggleFeatureFlag: (flag: keyof HearthFeatureFlags) => void;
 }
 
 const HearthContext = createContext<HearthContextType | undefined>(undefined);
@@ -260,6 +271,16 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Platform Feature Flags (Phase A4 & C1)
+  const [featureFlags, setFeatureFlagsState] = useState<HearthFeatureFlags>(getFeatureFlags());
+
+  const toggleFeatureFlag = (flag: keyof HearthFeatureFlags) => {
+    const nextVal = !featureFlags[flag];
+    const updated = setFeatureFlag(flag, nextVal);
+    setFeatureFlagsState(updated);
+    logger.info(`Platform Feature Flag Updated: ${flag} = ${nextVal}`, { category: 'security' });
+  };
 
   // Ambient sound state
   const [ambientSettings, setAmbientSettings] = useState<AmbientAudioSettings>({
@@ -1369,8 +1390,39 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addPrayer = async (
     prayerData: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>
   ): Promise<{ queued: boolean; error?: string }> => {
-    // Risk 3: Rate limiting (max 5 intentions per 10 minutes)
+    // Feature flag gate (Phase C1)
+    if (prayerData.destinationType === 'person' && !featureFlags.enableDirectIntentions) {
+      return {
+        queued: false,
+        error: 'Sanctuary notice: Direct person-to-person intentions are currently paused under sanctuary policy.',
+      };
+    }
+
+    // Phase B2: Universal Platform Consent Primitive
     const now = Date.now();
+    if (prayerData.destinationType === 'person' && prayerData.recipientName) {
+      const consentResult = evaluatePrayerConsent({
+        senderHandle: authSession?.handle || userProfile.displayName,
+        recipientHandle: prayerData.recipientName,
+        recipientPolicy: 'connections_only',
+        blockedUsers,
+        submissionTimestamps,
+        now,
+      });
+
+      if (!consentResult.allowed) {
+        logger.warn('Direct intention blocked by consent primitive', {
+          recipient: prayerData.recipientName,
+          code: consentResult.code,
+        });
+        return {
+          queued: false,
+          error: consentResult.userFacingMessage || 'Notice: This companion is currently not receiving direct intentions.',
+        };
+      }
+    }
+
+    // Rate limiting update (Risk 3: max 5 intentions per 10 minutes)
     const tenMinutesAgo = now - 10 * 60 * 1000;
     const recentSubmissions = submissionTimestamps.filter((t) => t > tenMinutesAgo);
     if (recentSubmissions.length >= 5) {
@@ -1380,17 +1432,6 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
     }
     setSubmissionTimestamps([...recentSubmissions, now]);
-
-    // Check if recipient has blocked sender or turned off requests (Risk 3)
-    if (prayerData.destinationType === 'person' && prayerData.recipientName) {
-      const rec = prayerData.recipientName.trim().toLowerCase();
-      if (blockedUsers.some((u) => u.toLowerCase() === rec)) {
-        return { queued: false, error: 'Notice: This companion is currently not receiving direct intentions.' };
-      }
-      if (rec === 'quiet_practitioner' || rec.includes('closed') || rec.includes('do_not_disturb')) {
-        return { queued: false, error: 'Notice: Recipient has set their prayer sanctuary to closed or disabled direct requests.' };
-      }
-    }
 
     const isOfflineMode = !navigator.onLine;
     let isEncrypted = false;
@@ -1750,6 +1791,8 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSpatialHeritageEnabled,
         isPersonalizationModalOpen,
         setIsPersonalizationModalOpen,
+        featureFlags,
+        toggleFeatureFlag,
       }}
     >
       {children}
