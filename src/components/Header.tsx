@@ -24,6 +24,7 @@ import {
   User,
   Crown,
   ShoppingBag,
+  Sliders,
 } from 'lucide-react';
 import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 import type { HearthTone, TimeOfDay } from '../types';
@@ -56,6 +57,7 @@ export const Header: React.FC = () => {
     setIsAuthModalOpen,
     setActiveTab,
     cart,
+    setIsPersonalizationModalOpen,
   } = useHearth();
 
   const [isA11yOpen, setIsA11yOpen] = useState(false);
@@ -154,6 +156,22 @@ export const Header: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span className="text-[11px] font-serif hidden lg:inline">Sacred Visuals</span>
+            </button>
+
+            {/* Tradition Personalization Trigger */}
+            <button
+              onClick={() => setIsPersonalizationModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all hover:scale-102"
+              style={{
+                borderColor: `${currentTone.primary}80`,
+                backgroundColor: `${currentTone.primary}12`,
+                color: currentTone.primary,
+              }}
+              title="Tradition Personalization & Multi-Calendar Matrix"
+              aria-label="Open Tradition Personalization Settings"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-serif hidden xl:inline">Personalization</span>
             </button>
 
             {/* Invitations & Connections Trigger */}

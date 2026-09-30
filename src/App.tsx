@@ -16,6 +16,7 @@ import { PrayComposerModal } from './components/PrayComposerModal';
 import { InvitationsModal } from './components/InvitationsModal';
 import { PrayerDetailModal } from './components/PrayerDetailModal';
 import { SanctuaryProtocolModal } from './components/SanctuaryProtocolModal';
+import { TraditionPersonalizationModal } from './components/TraditionPersonalizationModal';
 import { LivingLightField } from './components/LivingLightField';
 import { SUPPORTED_LANGUAGES } from './i18n/languages';
 import './App.css';
@@ -28,6 +29,8 @@ const MainSanctuary: React.FC = () => {
     currentLanguage,
     isAuthModalOpen,
     setIsAuthModalOpen,
+    isPersonalizationModalOpen,
+    setIsPersonalizationModalOpen,
   } = useHearth();
 
   const activeLangConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
@@ -107,6 +110,10 @@ const MainSanctuary: React.FC = () => {
       <InvitationsModal />
       <PrayerDetailModal />
       <SanctuaryProtocolModal />
+      <TraditionPersonalizationModal
+        isOpen={isPersonalizationModalOpen}
+        onClose={() => setIsPersonalizationModalOpen(false)}
+      />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );

@@ -23,6 +23,7 @@ import type {
   StoreProduct,
   CartItem,
 } from '../types';
+import type { CalendarSystemType } from '../types/traditionPersonalization';
 import {
   HEARTH_TONES,
   INITIAL_ROOMS,
@@ -174,6 +175,19 @@ interface HearthContextType {
   // Data Sovereignty
   exportUserData: () => void;
   purgeUserData: () => void;
+
+  // Tradition-Aware Personalization Layer
+  orientationHelperEnabled: boolean;
+  setOrientationHelperEnabled: (enabled: boolean) => void;
+  activeCalendarSystems: CalendarSystemType[];
+  setActiveCalendarSystems: React.Dispatch<React.SetStateAction<CalendarSystemType[]>>;
+  toggleCalendarSystem: (system: CalendarSystemType) => void;
+  dailyRhythmEnabled: boolean;
+  setDailyRhythmEnabled: (enabled: boolean) => void;
+  spatialHeritageEnabled: boolean;
+  setSpatialHeritageEnabled: (enabled: boolean) => void;
+  isPersonalizationModalOpen: boolean;
+  setIsPersonalizationModalOpen: (open: boolean) => void;
 }
 
 const HearthContext = createContext<HearthContextType | undefined>(undefined);
@@ -412,6 +426,71 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const clearCart = () => setCart([]);
+
+  // Tradition-Aware Personalization Layer State
+  const [orientationHelperEnabled, setOrientationHelperEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_orientation_enabled');
+      return saved !== null ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const [activeCalendarSystems, setActiveCalendarSystems] = useState<CalendarSystemType[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_active_calendars');
+      return saved ? JSON.parse(saved) : ['gregorian', 'hebrew', 'hijri', 'liturgical_christian'];
+    } catch {
+      return ['gregorian', 'hebrew', 'hijri', 'liturgical_christian'];
+    }
+  });
+
+  const [dailyRhythmEnabled, setDailyRhythmEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_daily_rhythm_enabled');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const [spatialHeritageEnabled, setSpatialHeritageEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_spatial_heritage_enabled');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    localStorage.setItem('hearth_orientation_enabled', JSON.stringify(orientationHelperEnabled));
+  }, [orientationHelperEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('hearth_active_calendars', JSON.stringify(activeCalendarSystems));
+  }, [activeCalendarSystems]);
+
+  useEffect(() => {
+    localStorage.setItem('hearth_daily_rhythm_enabled', JSON.stringify(dailyRhythmEnabled));
+  }, [dailyRhythmEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('hearth_spatial_heritage_enabled', JSON.stringify(spatialHeritageEnabled));
+  }, [spatialHeritageEnabled]);
+
+  const toggleCalendarSystem = (system: CalendarSystemType) => {
+    setActiveCalendarSystems((prev) => {
+      if (prev.includes(system)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter((s) => s !== system);
+      }
+      return [...prev, system];
+    });
+  };
 
   // Sovereign Sanctuary Auth & Vault State
   const [authSession, setAuthSession] = useState<SanctuaryAuthSession | null>(null);
@@ -1288,6 +1367,17 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsCartOpen,
         exportUserData,
         purgeUserData,
+        orientationHelperEnabled,
+        setOrientationHelperEnabled,
+        activeCalendarSystems,
+        setActiveCalendarSystems,
+        toggleCalendarSystem,
+        dailyRhythmEnabled,
+        setDailyRhythmEnabled,
+        spatialHeritageEnabled,
+        setSpatialHeritageEnabled,
+        isPersonalizationModalOpen,
+        setIsPersonalizationModalOpen,
       }}
     >
       {children}

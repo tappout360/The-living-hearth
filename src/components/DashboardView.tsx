@@ -4,6 +4,11 @@ import { HEARTH_TONES } from '../data/mockData';
 import { ConcentricRings, GoldenRatioSpiral } from './SacredGeometry';
 import { TraditionVisual } from './ReligiousVisuals';
 import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
+import { SacredOrientationCompass } from './SacredOrientationCompass';
+import {
+  getTraditionPersonalizationProfile,
+  getUpcomingObservancesForCalendars,
+} from '../data/traditionPersonalizationData';
 import type { TraditionFilterScope } from '../types';
 import {
   Sparkles,
@@ -22,6 +27,10 @@ import {
   Bell,
   BookMarked,
   Radio,
+  Sliders,
+  Clock,
+  Home,
+  Info,
 } from 'lucide-react';
 import { PRELOADED_SCRIPTURE_BOOKS } from '../data/scriptureData';
 import { CHURCH_BROADCAST_EVENTS } from '../data/churchEventsData';
@@ -46,9 +55,17 @@ export const DashboardView: React.FC = () => {
     setActivePrayerDetail,
     joinedRoomIds,
     completedLessonIds,
+    orientationHelperEnabled,
+    setOrientationHelperEnabled,
+    activeCalendarSystems,
+    dailyRhythmEnabled,
+    spatialHeritageEnabled,
+    setIsPersonalizationModalOpen,
   } = useHearth();
 
   const currentTone = HEARTH_TONES[hearthTone];
+  const personalizationProfile = getTraditionPersonalizationProfile(userProfile.primaryTradition);
+  const upcomingObservances = getUpcomingObservancesForCalendars(activeCalendarSystems);
 
   // Local state for modals & filtering
   const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
@@ -195,6 +212,17 @@ export const DashboardView: React.FC = () => {
                 <Compass className="w-3 h-3 text-amber-500" />
                 <span>Focus: {userProfile.primaryTradition}</span>
                 <ChevronRight className="w-3 h-3 text-stone-400" />
+              </button>
+
+              {/* Personalization Layer Button */}
+              <button
+                onClick={() => setIsPersonalizationModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-serif border border-stone-300/40 hover:border-amber-400 transition-colors"
+                style={{ backgroundColor: `${currentTone.primary}12` }}
+                title="Tradition-Aware Personalization & Dignity Matrix"
+              >
+                <Sliders className="w-3 h-3 text-amber-600" />
+                <span>Personalization</span>
               </button>
             </div>
 
@@ -345,6 +373,67 @@ export const DashboardView: React.FC = () => {
             </button>
           </div>
         )}
+      </section>
+
+      {/* 1.5. Sacred Times & Holy Days Multi-Calendar Ribbon */}
+      <section
+        aria-label="Upcoming Sacred Times and Multi-Calendar Observances"
+        className="rounded-3xl p-5 sm:p-6 border shadow-xs transition-all space-y-3"
+        style={{
+          borderColor: `${currentTone.primary}30`,
+          backgroundColor:
+            timeOfDay === 'night' ? 'rgba(42, 35, 29, 0.85)' : 'rgba(255, 253, 249, 0.95)',
+        }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-amber-500" />
+            <h3 className="font-serif text-base sm:text-lg font-normal m-0">
+              Sacred Times & Observances
+            </h3>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-500 font-mono">
+              {activeCalendarSystems.length} calendar systems active
+            </span>
+          </div>
+          <button
+            onClick={() => setIsPersonalizationModalOpen(true)}
+            className="text-xs font-serif text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1 self-start sm:self-auto"
+          >
+            <span>Manage Calendars & Systems</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-1">
+          {upcomingObservances.map((obs) => (
+            <div
+              key={obs.id}
+              className="p-3.5 rounded-2xl border transition-all hover:scale-101 space-y-1.5"
+              style={{
+                borderColor: obs.beginsAtSunset ? `${currentTone.primary}45` : 'rgba(232, 168, 124, 0.2)',
+                backgroundColor: obs.beginsAtSunset ? `${currentTone.primary}0D` : 'transparent',
+              }}
+            >
+              <div className="flex items-center justify-between gap-1 text-[10px]">
+                <span className="font-mono px-1.5 py-0.5 rounded-md bg-stone-500/10 text-stone-500 uppercase">
+                  {obs.calendarSystem.replace('_', ' ')}
+                </span>
+                <span className="font-serif font-medium text-amber-700 dark:text-amber-300">
+                  {obs.dateDisplay}
+                </span>
+              </div>
+              <h4 className="font-serif text-sm font-medium leading-tight m-0 text-stone-800 dark:text-stone-100">
+                {obs.name}
+              </h4>
+              <p className="text-[11px] text-stone-500 line-clamp-2 leading-relaxed">
+                {obs.description}
+              </p>
+              <div className="text-[10px] text-stone-400 font-serif pt-0.5">
+                Tradition: {obs.traditionId}
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* 2. Golden Ratio Split: Today's Light (Primary 61.8%) & Practice Rhythm (Secondary 38.2%) */}
@@ -572,6 +661,207 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* 2.6. Sacred Orientation & Daily Practice Rhythm (Tradition Personalization Dimensions) */}
+      <section
+        aria-label="Sacred Orientation and Daily Practice Rhythm"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch"
+      >
+        {/* Left Column: Daily Practice Rhythm (if enabled) */}
+        <div
+          className={`${orientationHelperEnabled ? 'lg:col-span-6' : 'lg:col-span-12'} rounded-3xl p-6 border shadow-xs flex flex-col justify-between space-y-4`}
+          style={{
+            borderColor: `${currentTone.primary}35`,
+            backgroundColor: timeOfDay === 'night' ? '#2B231D' : '#FBF7F2',
+          }}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                <h3 className="font-serif text-base sm:text-lg font-normal m-0">
+                  Suggested Practice Rhythm • {userProfile.primaryTradition}
+                </h3>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/10 text-stone-500 font-serif">
+                Non-Mandatory Windows
+              </span>
+            </div>
+
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Gentle windows derived from the historic daily cadence of {userProfile.primaryTradition}. Offered for contemplation without alarms, guilt, or compliance scoring.
+            </p>
+
+            {dailyRhythmEnabled ? (
+              <div className="space-y-2 pt-1">
+                {personalizationProfile.dailyRhythm.map((rhythm) => (
+                  <div
+                    key={rhythm.id}
+                    className="p-3 rounded-2xl border flex items-start justify-between gap-3 text-xs"
+                    style={{
+                      borderColor: 'rgba(232, 168, 124, 0.25)',
+                      backgroundColor:
+                        timeOfDay === 'night' ? 'rgba(40, 34, 29, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+                    }}
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-serif font-semibold text-stone-800 dark:text-stone-100">
+                          {rhythm.name}
+                        </span>
+                        {rhythm.traditionalName && (
+                          <span className="text-[11px] text-stone-400 italic">
+                            ({rhythm.traditionalName})
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-stone-500 line-clamp-1">
+                        {rhythm.description}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-[10px]">
+                        {rhythm.timeWindow}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 text-center space-y-2">
+                <p className="text-xs text-stone-400">Daily practice rhythm is currently paused.</p>
+                <button
+                  onClick={() => setIsPersonalizationModalOpen(true)}
+                  className="text-xs font-serif text-amber-600 underline"
+                >
+                  Enable in Personalization Settings
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-stone-200/20 text-[11px] text-stone-400">
+            <span>Harmonized with solar/lunar movement</span>
+            <button
+              onClick={() => setIsPersonalizationModalOpen(true)}
+              className="text-amber-600 hover:underline"
+            >
+              Customize Rhythm
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column: Sacred Orientation Compass (if enabled) or Opt-in Card */}
+        {orientationHelperEnabled ? (
+          <div className="lg:col-span-6">
+            <SacredOrientationCompass profile={personalizationProfile} />
+          </div>
+        ) : (
+          <div
+            className="lg:col-span-6 rounded-3xl p-6 border shadow-xs flex flex-col justify-between space-y-4"
+            style={{
+              borderColor: `${currentTone.primary}35`,
+              backgroundColor: timeOfDay === 'night' ? '#2F2721' : '#FFFDF9',
+            }}
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-amber-500" />
+                  <h3 className="font-serif text-base sm:text-lg font-normal m-0">
+                    Sacred Orientation Helper (Opt-In)
+                  </h3>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-500/15 text-stone-400 font-mono">
+                  Off by Default
+                </span>
+              </div>
+
+              <p className="text-xs text-stone-500 leading-relaxed">
+                Many traditions honor facing a specific sacred center or cardinal direction during prayer or meditation.
+              </p>
+
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-1.5 text-xs">
+                <div className="font-serif font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-amber-600" />
+                  <span>
+                    Focus for {userProfile.primaryTradition}:{' '}
+                    {personalizationProfile.orientation.target?.name ||
+                      (personalizationProfile.orientation.cardinalDirection
+                        ? `${personalizationProfile.orientation.cardinalDirection}-facing`
+                        : 'Inward / Center of Prayer')}
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 dark:text-stone-300 leading-snug">
+                  {personalizationProfile.orientation.target?.theologicalSignificance ||
+                    personalizationProfile.orientation.advisoryNote}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 flex items-center justify-between border-t border-stone-200/20">
+              <span className="text-[11px] text-stone-400">Geodesic Azimuth Calculation</span>
+              <button
+                onClick={() => setOrientationHelperEnabled(true)}
+                className="px-4 py-2 rounded-full font-serif text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-transform hover:scale-102"
+                style={{ backgroundColor: currentTone.primary, color: '#2C2520' }}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Enable Compass Dial</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 2.7. Spatial Heritage & Contemplative Environment Card */}
+      {spatialHeritageEnabled && (
+        <section
+          aria-label="Spatial and Environmental Heritage"
+          className="rounded-3xl p-6 border shadow-xs space-y-3"
+          style={{
+            borderColor: `${currentTone.primary}25`,
+            backgroundColor:
+              timeOfDay === 'night' ? 'rgba(38, 31, 26, 0.9)' : 'rgba(254, 252, 248, 0.95)',
+          }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Home className="w-4 h-4 text-amber-600" />
+              <h3 className="font-serif text-base sm:text-lg font-normal m-0">
+                Spatial & Environmental Heritage • {personalizationProfile.spatialHeritage.systemName}
+              </h3>
+            </div>
+            <span className="text-[10px] text-stone-400 font-serif">
+              Tradition: {personalizationProfile.traditionName}
+            </span>
+          </div>
+
+          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed font-serif italic">
+            “{personalizationProfile.spatialHeritage.corePrinciple}”
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs">
+            {personalizationProfile.spatialHeritage.gentleGuidance.slice(0, 2).map((guidance, idx) => (
+              <div
+                key={idx}
+                className="p-3.5 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-1"
+              >
+                <span className="font-serif font-semibold text-amber-700 dark:text-amber-300 block">
+                  Guidance Principle {idx + 1}:
+                </span>
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  {guidance}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-stone-400 font-sans pt-1">
+            <strong>Advisory Note:</strong> {personalizationProfile.spatialHeritage.educationalDisclaimer}
+          </p>
+        </section>
+      )}
 
       {/* 3. Horizontal Scroll: Moderated Circles / Rooms */}
       <section aria-label="Moderated Circles and Rooms" className="space-y-3">

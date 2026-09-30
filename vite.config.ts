@@ -15,9 +15,12 @@ export default defineConfig({
           if (id.includes('node_modules/lucide-react')) {
             return 'icons'
           }
+          if (id.includes('src/data/traditionPersonalizationData') || id.includes('src/data/scriptureData')) {
+            return 'sacred-corpus'
+          }
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 750,
   },
 })
