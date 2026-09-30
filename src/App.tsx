@@ -18,6 +18,8 @@ import { PrayerDetailModal } from './components/PrayerDetailModal';
 import { SanctuaryProtocolModal } from './components/SanctuaryProtocolModal';
 import { TraditionPersonalizationModal } from './components/TraditionPersonalizationModal';
 import { DomainReadinessModal } from './components/DomainReadinessModal';
+import { ModerationPortalModal } from './components/ModerationPortalModal';
+import { ContentCorrectionModal } from './components/ContentCorrectionModal';
 import { DemoPersonaBar } from './components/DemoPersonaBar';
 import { LivingLightField } from './components/LivingLightField';
 import { SUPPORTED_LANGUAGES } from './i18n/languages';
@@ -35,6 +37,10 @@ const MainSanctuary: React.FC = () => {
     setIsPersonalizationModalOpen,
     isDomainGuideOpen,
     setIsDomainGuideOpen,
+    isModerationPortalOpen,
+    setIsModerationPortalOpen,
+    isCorrectionModalOpen,
+    setIsCorrectionModalOpen,
   } = useHearth();
 
   const activeLangConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
@@ -124,6 +130,14 @@ const MainSanctuary: React.FC = () => {
       <DomainReadinessModal
         isOpen={isDomainGuideOpen}
         onClose={() => setIsDomainGuideOpen(false)}
+      />
+      <ModerationPortalModal
+        isOpen={isModerationPortalOpen}
+        onClose={() => setIsModerationPortalOpen(false)}
+      />
+      <ContentCorrectionModal
+        isOpen={isCorrectionModalOpen}
+        onClose={() => setIsCorrectionModalOpen(false)}
       />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>

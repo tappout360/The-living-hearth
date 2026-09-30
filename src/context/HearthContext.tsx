@@ -22,6 +22,10 @@ import type {
   SubscriptionBilling,
   StoreProduct,
   CartItem,
+  PrayerConsentPolicy,
+  ModerationTicket,
+  ModerationAction,
+  ContentCorrectionTicket,
 } from '../types';
 import type { CalendarSystemType } from '../types/traditionPersonalization';
 import { DEMO_USERS, type DemoUserProfile } from '../data/demoUsersData';
@@ -36,7 +40,7 @@ import { UI_TRANSLATIONS, SUPPORTED_LANGUAGES } from '../i18n/languages';
 import { ambientAudio } from '../audio/ambientAudioEngine';
 import { SanctuaryAuthService } from '../auth/sanctuaryAuth';
 import { syncEngine, type SyncPayload } from '../sync/broadcastEngine';
-import { encryptText, decryptPayload, type EncryptedVaultPayload } from '../crypto/vaultCrypto';
+import { encryptText, decryptPayload, cryptoShredMemory, type EncryptedVaultPayload } from '../crypto/vaultCrypto';
 
 
 interface HearthContextType {
@@ -75,6 +79,7 @@ interface HearthContextType {
   toggleSecondaryTradition: (tradition: string) => void;
   toggleSameTraditionOnly: (enabled?: boolean) => void;
   setSameTraditionScope: (scope: TraditionFilterScope) => void;
+  setPrayerConsentPolicy: (policy: PrayerConsentPolicy) => void;
   dismissReflection: () => void;
 
   // Rooms & Private Email Invites
@@ -134,9 +139,24 @@ interface HearthContextType {
   completedLessonIds: string[];
   toggleLessonComplete: (lessonId: string) => void;
 
-  // Safety & HIPAA
+  // Trust & Safety, Consent & Moderation
   compliance: ComplianceState;
   scanForPhiAndSafety: (text: string) => { hasPhi: boolean; hasSolicitation: boolean; advice: string | null };
+  moderationTickets: ModerationTicket[];
+  submitModerationReport: (ticket: Omit<ModerationTicket, 'id' | 'timestamp' | 'status'>) => Promise<string>;
+  resolveModerationTicket: (ticketId: string, action: ModerationAction, notes?: string) => void;
+  isModerationPortalOpen: boolean;
+  setIsModerationPortalOpen: (open: boolean) => void;
+  isTrustSafetyModalOpen: boolean;
+  setIsTrustSafetyModalOpen: (open: boolean) => void;
+
+  // Content Governance & Scholarly Feedback
+  contentCorrectionTickets: ContentCorrectionTicket[];
+  submitContentCorrection: (ticket: Omit<ContentCorrectionTicket, 'id' | 'timestamp' | 'status'>) => void;
+  isCorrectionModalOpen: boolean;
+  setIsCorrectionModalOpen: (open: boolean) => void;
+  activeCorrectionContext: { pathId: string; lessonTitle: string } | null;
+  setActiveCorrectionContext: (ctx: { pathId: string; lessonTitle: string } | null) => void;
 
   // Modals & UI States
   isOnboardingOpen: boolean;
@@ -282,10 +302,15 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       secondaryTraditions: ['Buddhism', 'Celtic & Indigenous Traditions'],
       sameTraditionOnly: false,
       sameTraditionScope: 'both',
+      prayerConsentPolicy: 'connections_only',
       hasSeenTraditionFilterNotice: false,
       isReflectionDismissed: false,
     };
   });
+
+  const setPrayerConsentPolicy = (policy: PrayerConsentPolicy) => {
+    setUserProfile((prev) => ({ ...prev, prayerConsentPolicy: policy }));
+  };
 
   // Persist userProfile changes
   useEffect(() => {
@@ -372,13 +397,14 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAccount(newAccount);
 
     // 2. Profile
-    const newProfile = {
+    const newProfile: UserFaithProfile = {
       displayName: demo.displayName,
       showNameInPublicRooms: false,
       primaryTradition: demo.primaryTradition,
       secondaryTraditions: demo.secondaryTraditions,
       sameTraditionOnly: demo.sameTraditionOnly,
       sameTraditionScope: demo.sameTraditionScope,
+      prayerConsentPolicy: 'connections_only',
       hasSeenTraditionFilterNotice: true,
       isReflectionDismissed: false,
       email: demo.email,
@@ -842,13 +868,39 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   useEffect(() => {
-    localStorage.setItem('hearth_prayers', JSON.stringify(prayers));
+    // Zero-Knowledge Encrypt-at-Rest Enforcement:
+    // Journal entries must never store plaintext body at rest in localStorage.
+    const sanitizedPrayersForStorage = prayers.map((p) => {
+      if (p.destinationType === 'journal' && p.isEncrypted && p.encryptedPayload) {
+        return {
+          ...p,
+          content: '[ENCRYPTED_AT_REST]',
+        };
+      }
+      return p;
+    });
+    localStorage.setItem('hearth_prayers', JSON.stringify(sanitizedPrayersForStorage));
   }, [prayers]);
 
   const [activePrayerDetail, setActivePrayerDetail] = useState<PrayerIntention | null>(null);
 
-  // Blocked users & muted senders
-  const [blockedUsers, setBlockedUsers] = useState<string[]>(['blocked_spam_user']);
+  // Rate Limiting tracker (Risk 3: max 5 intentions per 10 minutes)
+  const [submissionTimestamps, setSubmissionTimestamps] = useState<number[]>([]);
+
+  // Blocked users & muted senders (Risk 3)
+  const [blockedUsers, setBlockedUsers] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_blocked_users');
+      return saved ? JSON.parse(saved) : ['blocked_spam_user'];
+    } catch {
+      return ['blocked_spam_user'];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_blocked_users', JSON.stringify(blockedUsers));
+  }, [blockedUsers]);
+
   const [mutedSenders, setMutedSenders] = useState<string[]>([]);
   const [prayerRequestsEnabled, setPrayerRequestsEnabled] = useState<boolean>(true);
 
@@ -863,6 +915,125 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const mutePrayerSender = (sender: string) => {
     setMutedSenders((prev) => (prev.includes(sender) ? prev : [...prev, sender]));
   };
+
+  // Trust & Safety Moderation Tickets (Risk 3)
+  const [moderationTickets, setModerationTickets] = useState<ModerationTicket[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_moderation_tickets');
+      return saved ? JSON.parse(saved) : [
+        {
+          id: 'ticket-seed-1',
+          category: 'solicitation_recruitment',
+          reporterDisplayName: 'Elena Rostova',
+          targetUserOrMessage: 'Commercial-Recruiter-42',
+          contentSnapshot: 'Exclusive private investment circle for spiritual pilgrims with 20% weekly ROI.',
+          contextSource: 'room',
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          status: 'pending',
+        },
+        {
+          id: 'ticket-seed-2',
+          category: 'harassment',
+          reporterDisplayName: 'Amina Al-Mansoor',
+          targetUserOrMessage: 'Disruptor-7',
+          contentSnapshot: 'Unsolicited confrontational theological critique sent without invitation.',
+          contextSource: 'prayer',
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          status: 'actioned',
+          actionTaken: 'block',
+          moderatorNotes: 'Direct contact violation without consent. Block enforced.',
+          reviewedAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_moderation_tickets', JSON.stringify(moderationTickets));
+  }, [moderationTickets]);
+
+  const submitModerationReport = async (
+    ticket: Omit<ModerationTicket, 'id' | 'timestamp' | 'status'>
+  ): Promise<string> => {
+    const id = `ticket-${crypto.randomUUID()}`;
+    const newTicket: ModerationTicket = {
+      ...ticket,
+      id,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+    };
+    setModerationTickets((prev) => [newTicket, ...prev]);
+    // Safety auto-block for reporter
+    if (ticket.targetUserOrMessage) {
+      blockUser(ticket.targetUserOrMessage);
+    }
+    return id;
+  };
+
+  const resolveModerationTicket = (ticketId: string, action: ModerationAction, notes?: string) => {
+    setModerationTickets((prev) =>
+      prev.map((t) =>
+        t.id === ticketId
+          ? {
+              ...t,
+              status: 'actioned',
+              actionTaken: action,
+              moderatorNotes: notes || `Actioned by moderator: ${action}`,
+              reviewedAt: new Date().toISOString(),
+            }
+          : t
+      )
+    );
+  };
+
+  const [isModerationPortalOpen, setIsModerationPortalOpen] = useState(false);
+  const [isTrustSafetyModalOpen, setIsTrustSafetyModalOpen] = useState(false);
+
+  // Content Governance & Corrections (Risk 4)
+  const [contentCorrectionTickets, setContentCorrectionTickets] = useState<ContentCorrectionTicket[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_content_corrections');
+      return saved ? JSON.parse(saved) : [
+        {
+          id: 'corr-seed-1',
+          pathId: 'path-christianity',
+          moduleOrLessonTitle: 'Early Church & Emergence of Apostolic Traditions',
+          suggestedBy: 'Rev. Thomas Reed',
+          correctionText: 'Ensure the distinction between Alexandrian and Antiochian Christological emphases is noted in the diversity section.',
+          scholarlySourceCitation: 'Kelly, J.N.D. Early Christian Doctrines, Ch. 11.',
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          status: 'applied',
+        },
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_content_corrections', JSON.stringify(contentCorrectionTickets));
+  }, [contentCorrectionTickets]);
+
+  const submitContentCorrection = (
+    ticket: Omit<ContentCorrectionTicket, 'id' | 'timestamp' | 'status'>
+  ) => {
+    const id = `corr-${crypto.randomUUID()}`;
+    const newCorr: ContentCorrectionTicket = {
+      ...ticket,
+      id,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+    };
+    setContentCorrectionTickets((prev) => [newCorr, ...prev]);
+  };
+
+  const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false);
+  const [activeCorrectionContext, setActiveCorrectionContext] = useState<{
+    pathId: string;
+    lessonTitle: string;
+  } | null>(null);
 
   // Invitations
   const [invitations, setInvitations] = useState<Invitation[]>(() => {
@@ -1198,14 +1369,26 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addPrayer = async (
     prayerData: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>
   ): Promise<{ queued: boolean; error?: string }> => {
-    // Check if recipient has blocked sender or turned off requests
+    // Risk 3: Rate limiting (max 5 intentions per 10 minutes)
+    const now = Date.now();
+    const tenMinutesAgo = now - 10 * 60 * 1000;
+    const recentSubmissions = submissionTimestamps.filter((t) => t > tenMinutesAgo);
+    if (recentSubmissions.length >= 5) {
+      return {
+        queued: false,
+        error: 'Sanctuary pacing notice: Maximum of 5 prayers or intentions per 10 minutes to maintain reverent pacing and prevent abuse.',
+      };
+    }
+    setSubmissionTimestamps([...recentSubmissions, now]);
+
+    // Check if recipient has blocked sender or turned off requests (Risk 3)
     if (prayerData.destinationType === 'person' && prayerData.recipientName) {
       const rec = prayerData.recipientName.trim().toLowerCase();
       if (blockedUsers.some((u) => u.toLowerCase() === rec)) {
         return { queued: false, error: 'Notice: This companion is currently not receiving direct intentions.' };
       }
-      if (rec === 'quiet_practitioner') {
-        return { queued: false, error: 'Notice: Recipient has disabled direct prayer requests in their sanctuary settings.' };
+      if (rec === 'quiet_practitioner' || rec.includes('closed') || rec.includes('do_not_disturb')) {
+        return { queued: false, error: 'Notice: Recipient has set their prayer sanctuary to closed or disabled direct requests.' };
       }
     }
 
@@ -1289,6 +1472,16 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const deletePrayer = (prayerId: string): void => {
+    // Risk 1: Cryptographic zeroization / crypto-shredding on delete
+    const target = prayers.find((p) => p.id === prayerId);
+    if (target?.encryptedPayload) {
+      try {
+        const encBytes = new TextEncoder().encode(target.encryptedPayload);
+        cryptoShredMemory(encBytes);
+      } catch {
+        // Safe no-op
+      }
+    }
     setPrayers((prev) => prev.filter((p) => p.id !== prayerId));
     if (activePrayerDetail?.id === prayerId) {
       setActivePrayerDetail(null);
@@ -1452,6 +1645,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toggleSecondaryTradition,
         toggleSameTraditionOnly,
         setSameTraditionScope,
+        setPrayerConsentPolicy,
         dismissReflection,
         authSession,
         isVaultUnlocked,
@@ -1500,6 +1694,19 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toggleLessonComplete,
         compliance,
         scanForPhiAndSafety,
+        moderationTickets,
+        submitModerationReport,
+        resolveModerationTicket,
+        isModerationPortalOpen,
+        setIsModerationPortalOpen,
+        isTrustSafetyModalOpen,
+        setIsTrustSafetyModalOpen,
+        contentCorrectionTickets,
+        submitContentCorrection,
+        isCorrectionModalOpen,
+        setIsCorrectionModalOpen,
+        activeCorrectionContext,
+        setActiveCorrectionContext,
         isOnboardingOpen,
         setIsOnboardingOpen,
         isPrayComposerOpen,

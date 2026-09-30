@@ -17,8 +17,11 @@ import {
   Eye,
   EyeOff,
   Globe,
+  ShieldAlert,
+  BookOpen,
 } from 'lucide-react';
 import { syncEngine } from '../sync/broadcastEngine';
+import type { PrayerConsentPolicy } from '../types';
 
 export const ProfileSafetyView: React.FC = () => {
   const {
@@ -28,8 +31,12 @@ export const ProfileSafetyView: React.FC = () => {
     exportUserData,
     purgeUserData,
     userProfile,
+    setPrayerConsentPolicy,
     setIsInvitationsModalOpen,
     setIsProtocolModalOpen,
+    setIsModerationPortalOpen,
+    setIsCorrectionModalOpen,
+    moderationTickets,
     authSession,
     isVaultUnlocked,
     setupPassphraseVault,
@@ -41,7 +48,6 @@ export const ProfileSafetyView: React.FC = () => {
   const currentTone = HEARTH_TONES[hearthTone];
 
   const [privateByDefault, setPrivateByDefault] = useState(true);
-  const [requireConsentForPrayers, setRequireConsentForPrayers] = useState(true);
   const [anonymousInRooms, setAnonymousInRooms] = useState(true);
   const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
   const [purgeSuccess, setPurgeSuccess] = useState(false);
@@ -221,27 +227,48 @@ export const ProfileSafetyView: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-3.5 rounded-2xl border border-stone-200/20">
+          {/* Risk 3: Explicit 4-mode Prayer & Intention Consent Policy */}
+          <div className="p-4 rounded-2xl border border-stone-200/20 bg-stone-500/5 space-y-3">
             <div>
-              <span className="font-medium block">Require Mutual Consent for Intentions</span>
-              <span className="text-xs text-stone-400">
-                Never allow unsolicited direct prayer messages without prior consent
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-xs sm:text-sm block">Prayer & Intention Consent Policy</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">
+                  {userProfile.prayerConsentPolicy || 'connections_only'}
+                </span>
+              </div>
+              <p className="text-xs text-stone-400 mt-0.5">
+                Govern who can send you direct prayers, intentions, or sanctuary messages.
+              </p>
             </div>
-            <button
-              onClick={() => setRequireConsentForPrayers(!requireConsentForPrayers)}
-              role="switch"
-              aria-checked={requireConsentForPrayers}
-              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                requireConsentForPrayers ? 'bg-amber-600' : 'bg-stone-300'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                  requireConsentForPrayers ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {[
+                { id: 'open' as PrayerConsentPolicy, title: 'Open Sanctuary', desc: 'Any pilgrim on the Hearth may send an intention preview.' },
+                { id: 'connections_only' as PrayerConsentPolicy, title: 'Connections Only', desc: 'Only confirmed companions from your contact circles.' },
+                { id: 'shared_rooms_only' as PrayerConsentPolicy, title: 'Shared Rooms Only', desc: 'Companions who share at least one active prayer room.' },
+                { id: 'closed' as PrayerConsentPolicy, title: 'Closed / Solitude', desc: 'Completely closed to direct intentions. Private journal only.' },
+              ].map((policy) => {
+                const isSelected = (userProfile.prayerConsentPolicy || 'connections_only') === policy.id;
+                return (
+                  <button
+                    key={policy.id}
+                    type="button"
+                    onClick={() => setPrayerConsentPolicy(policy.id)}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-amber-500 bg-amber-500/15 text-amber-900 dark:text-amber-100 font-medium'
+                        : 'border-stone-200/20 hover:border-stone-400/40 text-stone-600 dark:text-stone-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">{policy.title}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-amber-600" />}
+                    </div>
+                    <span className="text-[11px] text-stone-400 block mt-1">{policy.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center justify-between p-3.5 rounded-2xl border border-stone-200/20">
@@ -264,6 +291,50 @@ export const ProfileSafetyView: React.FC = () => {
                   anonymousInRooms ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
+            </button>
+          </div>
+
+          {/* Quick Access to Moderation & Content Integrity Portals */}
+          <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setIsModerationPortalOpen(true)}
+              className="p-3.5 rounded-2xl border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 transition-colors flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
+                <div>
+                  <span className="font-semibold text-xs text-rose-600 dark:text-rose-300 block">
+                    Trust & Safety Portal
+                  </span>
+                  <span className="text-[11px] text-stone-400">
+                    Queue, anti-solicitation triage & audit logs
+                  </span>
+                </div>
+              </div>
+              {moderationTickets.filter((t) => t.status === 'pending').length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-rose-500 text-white font-bold">
+                  {moderationTickets.filter((t) => t.status === 'pending').length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsCorrectionModalOpen(true)}
+              className="p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="w-4 h-4 text-amber-500 shrink-0" />
+                <div>
+                  <span className="font-semibold text-xs text-amber-700 dark:text-amber-300 block">
+                    Scholarly Integrity & Feedback
+                  </span>
+                  <span className="text-[11px] text-stone-400">
+                    Suggest citations & track editorial reviews
+                  </span>
+                </div>
+              </div>
             </button>
           </div>
         </div>

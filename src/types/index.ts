@@ -151,6 +151,46 @@ export interface InvitationPreferences {
   allowLearningShares: boolean;
 }
 
+export type PrayerConsentPolicy = 'open' | 'connections_only' | 'shared_rooms_only' | 'closed';
+
+export type ReportReason =
+  | 'solicitation_recruitment'
+  | 'harassment'
+  | 'hate_discrimination'
+  | 'spiritual_abuse'
+  | 'spam'
+  | 'other';
+
+export type ModerationStatus = 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+export type ModerationAction = 'none' | 'warn' | 'mute' | 'block' | 'ban' | 'dismiss';
+
+export interface ModerationTicket {
+  id: string;
+  category: ReportReason;
+  reporterDisplayName: string;
+  targetUserOrMessage: string;
+  contentSnapshot: string;
+  contextSource: 'room' | 'prayer' | 'invitation' | 'profile';
+  timestamp: string;
+  status: ModerationStatus;
+  actionTaken?: ModerationAction;
+  moderatorNotes?: string;
+  reviewedAt?: string;
+}
+
+export type ReviewWorkflowStatus = 'draft' | 'in_review' | 'scholarly_reviewed' | 'published';
+
+export interface ContentCorrectionTicket {
+  id: string;
+  pathId: string;
+  moduleOrLessonTitle: string;
+  suggestedBy: string;
+  correctionText: string;
+  scholarlySourceCitation?: string;
+  timestamp: string;
+  status: 'pending' | 'reviewed' | 'applied' | 'declined';
+}
+
 export type TraditionFilterScope = 'learning' | 'rooms' | 'both';
 
 export interface UserFaithProfile {
@@ -161,6 +201,7 @@ export interface UserFaithProfile {
   secondaryTraditions: string[];
   sameTraditionOnly: boolean;
   sameTraditionScope: TraditionFilterScope;
+  prayerConsentPolicy: PrayerConsentPolicy;
   hasSeenTraditionFilterNotice: boolean;
   isReflectionDismissed: boolean;
 }

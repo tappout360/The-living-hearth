@@ -18,6 +18,7 @@ import {
   ChevronUp,
   X,
   Check,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface SacredOrientationCompassProps {
@@ -29,7 +30,14 @@ export const SacredOrientationCompass: React.FC<SacredOrientationCompassProps> =
   profile: propProfile,
   onDismiss,
 }) => {
-  const { hearthTone, timeOfDay, userProfile } = useHearth();
+  const {
+    hearthTone,
+    timeOfDay,
+    userProfile,
+    setOrientationHelperEnabled,
+    setIsCorrectionModalOpen,
+    setActiveCorrectionContext,
+  } = useHearth();
   const currentTone = HEARTH_TONES[hearthTone];
   const profile = propProfile || getTraditionPersonalizationProfile(userProfile.primaryTradition);
 
@@ -353,6 +361,40 @@ export const SacredOrientationCompass: React.FC<SacredOrientationCompassProps> =
           )}
         </div>
       )}
+
+      {/* Risk 2: Calculation Provenance & Uncertainty Disclaimer */}
+      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-semibold text-amber-800 dark:text-amber-200 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+            Calculation Provenance & Local Authority Notice
+          </span>
+          <span className="font-mono text-[10px] text-stone-500">WGS-84 Geodesic</span>
+        </div>
+        <p className="text-[11px] text-stone-600 dark:text-stone-300 leading-relaxed m-0">
+          <strong className="text-amber-900 dark:text-amber-200">Approximate</strong> — Bearings are calculated via standard Great Circle spherical trigonometry. Devotional practice should always be confirmed with your local community, local religious leadership, or verified physical sightings.
+        </p>
+        <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] border-t border-amber-500/15">
+          <button
+            onClick={() => {
+              setActiveCorrectionContext({
+                pathId: profile.traditionName.toLowerCase(),
+                lessonTitle: `Orientation Calculation: ${profile.traditionName} (${userCoords.label})`,
+              });
+              setIsCorrectionModalOpen(true);
+            }}
+            className="text-amber-700 dark:text-amber-300 underline hover:text-amber-800 font-medium transition-colors"
+          >
+            Report Inaccuracy / Propose Local Variant
+          </button>
+          <button
+            onClick={() => setOrientationHelperEnabled(false)}
+            className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+          >
+            Disable Orientation Helper
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

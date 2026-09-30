@@ -25,6 +25,7 @@ import {
   Crown,
   ShoppingBag,
   Sliders,
+  ShieldAlert,
 } from 'lucide-react';
 import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 import type { HearthTone, TimeOfDay } from '../types';
@@ -47,6 +48,7 @@ export const Header: React.FC = () => {
     setIsInvitationsModalOpen,
     isOnline,
     setIsProtocolModalOpen,
+    setIsModerationPortalOpen,
     authSession,
     isVaultUnlocked,
     unlockVault,
@@ -667,16 +669,29 @@ export const Header: React.FC = () => {
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsHipaaInfoOpen(false);
-                  setIsProtocolModalOpen(true);
-                }}
-                className="px-4 py-2 rounded-full border border-stone-300/40 text-xs font-serif hover:bg-stone-500/10 flex items-center gap-1.5"
-              >
-                <span>Complete Protocol & Governance Charter</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsHipaaInfoOpen(false);
+                    setIsProtocolModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-full border border-stone-300/40 text-xs font-serif hover:bg-stone-500/10 flex items-center gap-1.5"
+                >
+                  <span>Protocol & Charter</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsHipaaInfoOpen(false);
+                    setIsModerationPortalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-full border border-rose-500/40 text-rose-600 dark:text-rose-400 text-xs font-serif hover:bg-rose-500/10 flex items-center gap-1.5"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Trust & Safety Portal</span>
+                </button>
+              </div>
 
               <button
                 type="button"
