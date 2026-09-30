@@ -20,7 +20,11 @@ import {
   Edit3,
   Compass,
   Bell,
+  BookMarked,
+  Radio,
 } from 'lucide-react';
+import { PRELOADED_SCRIPTURE_BOOKS } from '../data/scriptureData';
+import { CHURCH_BROADCAST_EVENTS } from '../data/churchEventsData';
 
 export const DashboardView: React.FC = () => {
   const {
@@ -103,6 +107,24 @@ export const DashboardView: React.FC = () => {
     if (prayerFilter === 'received') return (p.responses && p.responses.length > 0) || p.recipientName === userProfile.displayName;
     return true;
   });
+
+  // Map userProfile.primaryTradition to 1 of 5 major traditions for canonical scriptures & streams
+  const matchedTraditionKey = (() => {
+    const t = userProfile.primaryTradition.toLowerCase();
+    if (t.includes('islam') || t.includes('muslim')) return 'islam';
+    if (t.includes('juda')) return 'judaism';
+    if (t.includes('hindu')) return 'hinduism';
+    if (t.includes('buddh')) return 'buddhism';
+    return 'christianity';
+  })();
+
+  const matchedBook = PRELOADED_SCRIPTURE_BOOKS.find((b) => b.religionId === matchedTraditionKey) || PRELOADED_SCRIPTURE_BOOKS[0];
+  const dailyScripture = matchedBook.chapters[0];
+
+  const traditionEvents = CHURCH_BROADCAST_EVENTS.filter((e) =>
+    e.religionId === matchedTraditionKey
+  );
+  const featuredEvent = traditionEvents[0] || CHURCH_BROADCAST_EVENTS[0];
 
   const handleToggleSameTradition = () => {
     if (!userProfile.sameTraditionOnly && !userProfile.hasSeenTraditionFilterNotice) {
@@ -435,6 +457,116 @@ export const DashboardView: React.FC = () => {
                 Zero solicitations, zero commercial tracking, and active PHI health shielding.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2.5. Personal Faith Sanctuary: Daily Canonical Scripture & House of Worship Stream */}
+      <section
+        aria-label="Personalized Scripture & Stream"
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      >
+        {/* Daily Scripture Card */}
+        <div
+          className="rounded-3xl p-6 border shadow-xs flex flex-col justify-between space-y-4"
+          style={{
+            borderColor: `${currentTone.primary}35`,
+            backgroundColor: timeOfDay === 'night' ? '#2F2721' : '#FFFDF9',
+          }}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-serif uppercase tracking-wider text-amber-600 font-semibold flex items-center gap-1.5">
+                <BookMarked className="w-3.5 h-3.5" />
+                Scripture of the Day • {matchedTraditionKey}
+              </span>
+              <span className="text-[10px] text-stone-400 font-mono">
+                {dailyScripture.verses.length} verses
+              </span>
+            </div>
+
+            <div>
+              <h3 className="font-serif text-lg font-normal leading-snug m-0">
+                {dailyScripture.title}
+              </h3>
+              <p className="text-xs text-stone-400 font-mono mt-0.5">
+                {matchedBook.title} • {matchedBook.originalLanguage}
+              </p>
+            </div>
+
+            <p className="text-xs sm:text-sm font-serif italic text-stone-700 dark:text-stone-300 line-clamp-3 leading-relaxed border-l-2 pl-3" style={{ borderColor: currentTone.primary }}>
+              “{dailyScripture.verses[0]?.text}”
+            </p>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-stone-200/20">
+            <span className="text-[11px] text-stone-400">
+              Highlighter & Margins Ready
+            </span>
+            <button
+              onClick={() => setActiveTab('scripture')}
+              className="px-4 py-1.5 rounded-full text-xs font-serif font-medium border flex items-center gap-1.5 hover:scale-102 transition-transform"
+              style={{
+                backgroundColor: `${currentTone.primary}20`,
+                borderColor: currentTone.primary,
+                color: currentTone.primary,
+              }}
+            >
+              <span>Study & Highlight</span>
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* Verified House of Worship Stream Card */}
+        <div
+          className="rounded-3xl p-6 border shadow-xs flex flex-col justify-between space-y-4"
+          style={{
+            borderColor: `${currentTone.primary}35`,
+            backgroundColor: timeOfDay === 'night' ? '#2F2721' : '#FFFDF9',
+          }}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-serif uppercase tracking-wider text-emerald-600 font-semibold flex items-center gap-1.5">
+                <Radio className="w-3.5 h-3.5 animate-pulse" />
+                Live Worship & Events • {matchedTraditionKey}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-mono">
+                {featuredEvent.broadcastType === 'live' ? 'LIVE NOW' : 'Pre-recorded'}
+              </span>
+            </div>
+
+            <div>
+              <h3 className="font-serif text-lg font-normal leading-snug m-0">
+                {featuredEvent.title}
+              </h3>
+              <p className="text-xs text-stone-500 font-serif mt-0.5">
+                {featuredEvent.houseOfWorshipName} • {featuredEvent.sacredRhythmTag}
+              </p>
+            </div>
+
+            <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed">
+              {featuredEvent.description}
+            </p>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-stone-200/20">
+            <span className="text-[11px] text-stone-400">
+              Speaker: {featuredEvent.speaker}
+            </span>
+            <button
+              onClick={() => setActiveTab('churches')}
+              className="px-4 py-1.5 rounded-full text-xs font-serif font-medium border flex items-center gap-1.5 hover:scale-102 transition-transform"
+              style={{
+                backgroundColor: `${currentTone.primary}20`,
+                borderColor: currentTone.primary,
+                color: currentTone.primary,
+              }}
+            >
+              <span>Join Sanctuary Stream</span>
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
         </div>
       </section>

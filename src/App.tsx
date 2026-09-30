@@ -4,6 +4,8 @@ import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DashboardView } from './components/DashboardView';
 import { RoomsView } from './components/RoomsView';
+import { ScriptureStudyView } from './components/ScriptureStudyView';
+import { ChurchEventsView } from './components/ChurchEventsView';
 import { LearningView } from './components/LearningView';
 import { ProfileSafetyView } from './components/ProfileSafetyView';
 import { OnboardingModal } from './components/OnboardingModal';
@@ -45,6 +47,8 @@ const MainSanctuary: React.FC = () => {
   const getAtmosphereMode = () => {
     switch (activeTab) {
       case 'learn':
+      case 'scripture':
+      case 'churches':
         return 'learning';
       case 'rooms':
         return 'practice';
@@ -77,6 +81,8 @@ const MainSanctuary: React.FC = () => {
       >
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'rooms' && <RoomsView />}
+        {activeTab === 'scripture' && <ScriptureStudyView />}
+        {activeTab === 'churches' && <ChurchEventsView />}
         {activeTab === 'learn' && <LearningView />}
         {activeTab === 'profile' && <ProfileSafetyView />}
       </main>

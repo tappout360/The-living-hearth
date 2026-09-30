@@ -73,6 +73,8 @@ export interface Room {
   memberCount: number;
   activityStatus: 'quiet' | 'glowing' | 'active';
   isPrivate: boolean;
+  inviteCode?: string;
+  allowedEmails?: string[];
   atmosphereProfile?: AudioAtmosphereProfile;
   rules: string[];
   recentMessages: RoomMessage[];
@@ -153,6 +155,7 @@ export type TraditionFilterScope = 'learning' | 'rooms' | 'both';
 
 export interface UserFaithProfile {
   displayName: string;
+  email?: string;
   showNameInPublicRooms: boolean;
   primaryTradition: string;
   secondaryTraditions: string[];
@@ -266,4 +269,13 @@ export interface SanctuaryAuthSession {
   createdAt: string;
   lastActiveAt: string;
 }
+
+export type SanctuaryTab =
+  | 'dashboard'
+  | 'rooms'
+  | 'pray'
+  | 'learn'
+  | 'scripture'
+  | 'churches'
+  | 'profile';
 

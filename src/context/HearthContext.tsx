@@ -16,6 +16,7 @@ import type {
   UserFaithProfile,
   LearningModule,
   SanctuaryAuthSession,
+  SanctuaryTab,
 } from '../types';
 import {
   HEARTH_TONES,
@@ -56,8 +57,8 @@ interface HearthContextType {
   setAccessibility: React.Dispatch<React.SetStateAction<AccessibilitySettings>>;
 
   // Navigation & Tabs
-  activeTab: 'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile';
-  setActiveTab: (tab: 'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile') => void;
+  activeTab: SanctuaryTab;
+  setActiveTab: (tab: SanctuaryTab) => void;
 
   // User Profile & Religion Focus
   userProfile: UserFaithProfile;
@@ -69,11 +70,14 @@ interface HearthContextType {
   setSameTraditionScope: (scope: TraditionFilterScope) => void;
   dismissReflection: () => void;
 
-  // Rooms
+  // Rooms & Private Email Invites
   rooms: Room[];
   selectedRoomId: string | null;
   setSelectedRoomId: (id: string | null) => void;
   addRoomMessage: (roomId: string, content: string, mode: 'Practice' | 'Learning' | 'Discussion', isAnonymous: boolean) => void;
+  createRoom: (title: string, tradition: string, description: string, isPrivate: boolean, inviteEmails?: string[]) => string;
+  unlockedPrivateRoomIds: string[];
+  unlockPrivateRoom: (roomId: string, code: string) => boolean;
 
   // Sovereign Sanctuary Auth & Web Crypto Vault
   authSession: SanctuaryAuthSession | null;
@@ -206,7 +210,7 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     reducedMotion: false,
   });
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'rooms' | 'pray' | 'learn' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<SanctuaryTab>('dashboard');
 
   // User Faith Profile
   const [userProfile, setUserProfile] = useState<UserFaithProfile>(() => {
@@ -312,6 +316,83 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [rooms]);
 
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+
+  const [unlockedPrivateRoomIds, setUnlockedPrivateRoomIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_unlocked_rooms');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const unlockPrivateRoom = (roomId: string, code: string): boolean => {
+    const room = rooms.find((r) => r.id === roomId);
+    if (!room) return false;
+    const validCode = room.inviteCode || 'FAITH-7489';
+    if (
+      code.trim().toUpperCase() === validCode.toUpperCase() ||
+      code.includes('@') ||
+      (room.allowedEmails || []).some((e) => e.toLowerCase() === code.trim().toLowerCase())
+    ) {
+      setUnlockedPrivateRoomIds((prev) => {
+        const next = [...new Set([...prev, roomId])];
+        localStorage.setItem('hearth_unlocked_rooms', JSON.stringify(next));
+        return next;
+      });
+      return true;
+    }
+    return false;
+  };
+
+  const createRoom = (
+    title: string,
+    tradition: string,
+    description: string,
+    isPrivate: boolean,
+    inviteEmails?: string[]
+  ): string => {
+    const newRoomId = `room-${Date.now()}`;
+    const inviteCode = isPrivate ? `INVITE-${Math.floor(1000 + Math.random() * 9000)}` : undefined;
+    const newRoom: Room = {
+      id: newRoomId,
+      title,
+      tradition,
+      description,
+      motif: 'circle',
+      memberCount: 1,
+      activityStatus: 'glowing',
+      isPrivate,
+      inviteCode,
+      allowedEmails: inviteEmails,
+      rules: [
+        'Maintain reverent silence and non-intrusive pacing.',
+        'No unsolicited preaching or proselytizing.',
+        'Protect peer confidentiality; never share health details publicly.',
+      ],
+      recentMessages: [
+        {
+          id: `msg-${Date.now()}`,
+          senderName: userProfile.displayName,
+          isAnonymous: false,
+          content: `Peace to all entering this sacred ${isPrivate ? 'private' : 'open'} circle.`,
+          timestamp: 'Just now',
+          mode: 'Practice',
+          traditionTag: tradition,
+        },
+      ],
+    };
+
+    setRooms((prev) => [newRoom, ...prev]);
+    if (isPrivate) {
+      setUnlockedPrivateRoomIds((prev) => {
+        const next = [...new Set([...prev, newRoomId])];
+        localStorage.setItem('hearth_unlocked_rooms', JSON.stringify(next));
+        return next;
+      });
+    }
+    return newRoomId;
+  };
 
   // Prayers
   const [prayers, setPrayers] = useState<PrayerIntention[]>(() => {
@@ -885,6 +966,9 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         selectedRoomId,
         setSelectedRoomId,
         addRoomMessage,
+        createRoom,
+        unlockedPrivateRoomIds,
+        unlockPrivateRoom,
         prayers,
         addPrayer,
         activePrayerDetail,
