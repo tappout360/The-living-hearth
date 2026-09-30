@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  Globe,
 } from 'lucide-react';
 import { syncEngine } from '../sync/broadcastEngine';
 
@@ -34,6 +35,7 @@ export const ProfileSafetyView: React.FC = () => {
     setupPassphraseVault,
     lockVault,
     switchToGuestVault,
+    setIsDomainGuideOpen,
   } = useHearth();
 
   const currentTone = HEARTH_TONES[hearthTone];
@@ -515,7 +517,7 @@ export const ProfileSafetyView: React.FC = () => {
       >
         <h3 className="font-serif text-lg font-normal m-0">Your Data Sovereignty</h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-2xl border border-stone-200/20 space-y-2">
             <span className="font-serif font-medium text-xs block">Export Complete Sanctuary</span>
             <p className="text-[11px] text-stone-400">
@@ -527,6 +529,20 @@ export const ProfileSafetyView: React.FC = () => {
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Sanctuary Data</span>
+            </button>
+          </div>
+
+          <div className="p-4 rounded-2xl border border-amber-500/30 space-y-2 bg-amber-500/5">
+            <span className="font-serif font-medium text-xs text-amber-700 dark:text-amber-300 block">Production Domain & DNS</span>
+            <p className="text-[11px] text-stone-400">
+              Authoritative DNS records (A, CNAME), automated SSL generation, and edge routing details.
+            </p>
+            <button
+              onClick={() => setIsDomainGuideOpen(true)}
+              className="mt-2 px-4 py-2 rounded-full border border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/15 text-xs font-serif flex items-center gap-1.5 transition-colors"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Domain DNS & SSL Guide</span>
             </button>
           </div>
 

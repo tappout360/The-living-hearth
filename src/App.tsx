@@ -17,6 +17,8 @@ import { InvitationsModal } from './components/InvitationsModal';
 import { PrayerDetailModal } from './components/PrayerDetailModal';
 import { SanctuaryProtocolModal } from './components/SanctuaryProtocolModal';
 import { TraditionPersonalizationModal } from './components/TraditionPersonalizationModal';
+import { DomainReadinessModal } from './components/DomainReadinessModal';
+import { DemoPersonaBar } from './components/DemoPersonaBar';
 import { LivingLightField } from './components/LivingLightField';
 import { SUPPORTED_LANGUAGES } from './i18n/languages';
 import './App.css';
@@ -31,6 +33,8 @@ const MainSanctuary: React.FC = () => {
     setIsAuthModalOpen,
     isPersonalizationModalOpen,
     setIsPersonalizationModalOpen,
+    isDomainGuideOpen,
+    setIsDomainGuideOpen,
   } = useHearth();
 
   const activeLangConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
@@ -86,6 +90,9 @@ const MainSanctuary: React.FC = () => {
       {/* Abstract Living Light Field Background with Room-Specific Atmospheric Layer */}
       <LivingLightField atmosphereMode={getAtmosphereMode()} />
 
+      {/* Top 1-Click Demo Persona Switcher Bar */}
+      <DemoPersonaBar />
+
       <Header />
 
       {/* Main Content Area bounded to Sacred Golden Proportion max-w (720px - 820px) */}
@@ -113,6 +120,10 @@ const MainSanctuary: React.FC = () => {
       <TraditionPersonalizationModal
         isOpen={isPersonalizationModalOpen}
         onClose={() => setIsPersonalizationModalOpen(false)}
+      />
+      <DomainReadinessModal
+        isOpen={isDomainGuideOpen}
+        onClose={() => setIsDomainGuideOpen(false)}
       />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>

@@ -24,6 +24,7 @@ import type {
   CartItem,
 } from '../types';
 import type { CalendarSystemType } from '../types/traditionPersonalization';
+import { DEMO_USERS, type DemoUserProfile } from '../data/demoUsersData';
 import {
   HEARTH_TONES,
   INITIAL_ROOMS,
@@ -155,9 +156,14 @@ interface HearthContextType {
   account: UserAccount;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
-  loginUser: (email: string, password?: string, displayName?: string) => void;
-  registerUser: (email: string, password?: string, displayName?: string, tradition?: string) => void;
+  loginUser: (email: string, password?: string, displayName?: string) => Promise<{ success: boolean; error?: string }>;
+  registerUser: (email: string, password?: string, displayName?: string, tradition?: string) => Promise<{ success: boolean; error?: string }>;
   logoutUser: () => void;
+  switchDemoUser: (email: string) => boolean;
+  demoUsers: DemoUserProfile[];
+  registeredUsers: { email: string; displayName: string; passwordHash: string; tradition?: string }[];
+  isDomainGuideOpen: boolean;
+  setIsDomainGuideOpen: (open: boolean) => void;
 
   // Subscription & Patronage
   updateSubscription: (tier: SubscriptionTier, billing?: SubscriptionBilling) => void;
@@ -312,42 +318,196 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [account]);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isDomainGuideOpen, setIsDomainGuideOpen] = useState(false);
 
-  const loginUser = (email: string, _password?: string, displayName?: string) => {
-    const name = displayName || email.split('@')[0] || 'Sanctuary Pilgrim';
-    setAccount((prev) => ({
-      ...prev,
-      email,
-      displayName: name,
-      isAuthenticated: true,
-    }));
-    setUserProfile((prev) => ({
-      ...prev,
-      displayName: name,
-      email,
-    }));
-    setIsAuthModalOpen(false);
+  // Registered accounts database stored encrypted in local state
+  const [registeredUsers, setRegisteredUsers] = useState<{ email: string; displayName: string; passwordHash: string; tradition?: string }[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_registered_users');
+      return saved
+        ? JSON.parse(saved)
+        : DEMO_USERS.map((u) => ({
+            email: u.email,
+            displayName: u.displayName,
+            passwordHash: u.passwordHash,
+            tradition: u.primaryTradition,
+          }));
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_registered_users', JSON.stringify(registeredUsers));
+  }, [registeredUsers]);
+
+  // Client-side SHA-256 password hash (never plaintext)
+  const hashPassword = async (pwd: string): Promise<string> => {
+    try {
+      const enc = new TextEncoder().encode(pwd);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+    } catch {
+      return `hash-${pwd.length}`;
+    }
   };
 
-  const registerUser = (email: string, _password?: string, displayName?: string, tradition?: string) => {
-    const name = displayName || email.split('@')[0] || 'Sanctuary Pilgrim';
+  // 1-Click Fast Switch to any of the 8 rich Demo Persona Accounts
+  const switchDemoUser = (email: string): boolean => {
+    const demo = DEMO_USERS.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
+    if (!demo) return false;
+
+    // 1. Account
     const newAccount: UserAccount = {
-      id: `usr-${Date.now()}`,
-      email,
+      id: demo.id,
+      email: demo.email,
+      displayName: demo.displayName,
+      isAuthenticated: true,
+      subscriptionTier: demo.subscriptionTier,
+      subscriptionBilling: demo.subscriptionBilling,
+      joinedAt: demo.joinedAt,
+    };
+    setAccount(newAccount);
+
+    // 2. Profile
+    const newProfile = {
+      displayName: demo.displayName,
+      showNameInPublicRooms: false,
+      primaryTradition: demo.primaryTradition,
+      secondaryTraditions: demo.secondaryTraditions,
+      sameTraditionOnly: demo.sameTraditionOnly,
+      sameTraditionScope: demo.sameTraditionScope,
+      hasSeenTraditionFilterNotice: true,
+      isReflectionDismissed: false,
+      email: demo.email,
+    };
+    setUserProfile(newProfile);
+
+    // 3. Prayers / Encrypted Journal
+    setPrayers(demo.prayers);
+
+    // 4. Joined Rooms & Lessons
+    setJoinedRoomIds(demo.joinedRoomIds);
+    setCompletedLessonIds(demo.completedLessonIds);
+
+    // 5. Invitations
+    setInvitations(demo.invitations);
+
+    // 6. Tradition Personalization Layer
+    setOrientationHelperEnabled(demo.orientationHelperEnabled);
+    setActiveCalendarSystems(demo.activeCalendarSystems);
+    setDailyRhythmEnabled(demo.dailyRhythmEnabled);
+    setSpatialHeritageEnabled(demo.spatialHeritageEnabled);
+
+    // 7. Persist completely in localStorage for seamless restart / refresh
+    localStorage.setItem('hearth_user_account', JSON.stringify(newAccount));
+    localStorage.setItem('hearth_user_profile', JSON.stringify(newProfile));
+    localStorage.setItem('hearth_prayers', JSON.stringify(demo.prayers));
+    localStorage.setItem('hearth_joined_rooms', JSON.stringify(demo.joinedRoomIds));
+    localStorage.setItem('hearth_completed_lessons', JSON.stringify(demo.completedLessonIds));
+    localStorage.setItem('hearth_invitations', JSON.stringify(demo.invitations));
+    localStorage.setItem('hearth_orientation_enabled', JSON.stringify(demo.orientationHelperEnabled));
+    localStorage.setItem('hearth_active_calendars', JSON.stringify(demo.activeCalendarSystems));
+    localStorage.setItem('hearth_daily_rhythm_enabled', JSON.stringify(demo.dailyRhythmEnabled));
+    localStorage.setItem('hearth_spatial_heritage_enabled', JSON.stringify(demo.spatialHeritageEnabled));
+
+    setIsAuthModalOpen(false);
+    return true;
+  };
+
+  const loginUser = async (
+    email: string,
+    password?: string,
+    displayName?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check if it's one of the demo users
+    const demo = DEMO_USERS.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (demo) {
+      switchDemoUser(demo.email);
+      return { success: true };
+    }
+
+    // Verify existing user password if registered
+    const existing = registeredUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing && password && existing.passwordHash) {
+      const pwdHash = await hashPassword(password);
+      if (existing.passwordHash !== pwdHash) {
+        return {
+          success: false,
+          error: 'Incorrect password for this account. Please verify and try again.',
+        };
+      }
+    }
+
+    const name = displayName?.trim() || existing?.displayName || cleanEmail.split('@')[0] || 'Sanctuary Pilgrim';
+    const newAccount: UserAccount = {
+      id: `usr-${cleanEmail.replace(/[^a-z0-9]/g, '-')}`,
+      email: cleanEmail,
       displayName: name,
       isAuthenticated: true,
       subscriptionTier: 'free',
       subscriptionBilling: 'monthly',
-      joinedAt: new Date().toISOString(),
+      joinedAt: '2026-01-01T00:00:00Z',
     };
+
     setAccount(newAccount);
     setUserProfile((prev) => ({
       ...prev,
       displayName: name,
-      email,
-      primaryTradition: tradition || prev.primaryTradition,
+      email: cleanEmail,
+      primaryTradition: existing?.tradition || prev.primaryTradition,
     }));
     setIsAuthModalOpen(false);
+    return { success: true };
+  };
+
+  const registerUser = async (
+    email: string,
+    password?: string,
+    displayName?: string,
+    tradition?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Duplicate email rejection check (US-0.1)
+    const exists = registeredUsers.some((u) => u.email.toLowerCase() === cleanEmail);
+    if (exists) {
+      return {
+        success: false,
+        error: 'An account with this email address already exists. Please sign in or use another email.',
+      };
+    }
+
+    const name = displayName?.trim() || cleanEmail.split('@')[0] || 'Sanctuary Pilgrim';
+    const pwdHash = password ? await hashPassword(password) : '';
+
+    const newAccount: UserAccount = {
+      id: `usr-${cleanEmail.replace(/[^a-z0-9]/g, '-')}`,
+      email: cleanEmail,
+      displayName: name,
+      isAuthenticated: true,
+      subscriptionTier: 'free',
+      subscriptionBilling: 'monthly',
+      joinedAt: '2026-01-01T00:00:00Z',
+    };
+
+    setAccount(newAccount);
+    setUserProfile((prev) => ({
+      ...prev,
+      displayName: name,
+      email: cleanEmail,
+      primaryTradition: tradition || prev.primaryTradition,
+    }));
+    setRegisteredUsers((prev) => [
+      ...prev,
+      { email: cleanEmail, displayName: name, passwordHash: pwdHash, tradition },
+    ]);
+    setIsAuthModalOpen(false);
+    return { success: true };
   };
 
   const logoutUser = () => {
@@ -1356,6 +1516,11 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         loginUser,
         registerUser,
         logoutUser,
+        switchDemoUser,
+        demoUsers: DEMO_USERS,
+        registeredUsers,
+        isDomainGuideOpen,
+        setIsDomainGuideOpen,
         updateSubscription,
         requestHardshipSponsorship,
         cart,

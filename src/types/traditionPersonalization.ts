@@ -37,6 +37,7 @@ export interface DailyRhythmWindow {
 
 export type CalendarSystemType =
   | 'gregorian'
+  | 'liturgical_christian'
   | 'hebrew'
   | 'hijri'
   | 'hindu_panchang'
