@@ -44,6 +44,8 @@ export const DashboardView: React.FC = () => {
     setSameTraditionScope,
     dismissReflection,
     setActivePrayerDetail,
+    joinedRoomIds,
+    completedLessonIds,
   } = useHearth();
 
   const currentTone = HEARTH_TONES[hearthTone];
@@ -432,18 +434,18 @@ export const DashboardView: React.FC = () => {
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between py-1.5 border-b border-stone-200/20">
                 <span className="text-stone-500">Private Prayers Recorded</span>
-                <span className="font-serif font-semibold">{prayers.length}</span>
+                <span className="font-serif font-semibold">{prayers.length} intentions</span>
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-stone-200/20">
-                <span className="text-stone-500">Circles Available</span>
+                <span className="text-stone-500">Circles Joined / Available</span>
                 <span className="font-serif font-semibold">
-                  {filteredRooms.length} {isFilterActive && `(Filtered to ${userProfile.primaryTradition})`}
+                  {joinedRoomIds.length} joined ({filteredRooms.length} available)
                 </span>
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-stone-200/20">
-                <span className="text-stone-500">Scholarly Modules</span>
+                <span className="text-stone-500">Scholarly Lessons Completed</span>
                 <span className="font-serif font-semibold">
-                  {filteredLearning.length} modules
+                  {completedLessonIds.length} completed ({filteredLearning.length} paths)
                 </span>
               </div>
             </div>

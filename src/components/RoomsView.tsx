@@ -24,6 +24,8 @@ import {
   KeyRound,
   Plus,
   Mail,
+  UserPlus,
+  UserMinus,
 } from 'lucide-react';
 import { analyzeContentSafety } from '../services/aiSafetyGuardian';
 
@@ -41,6 +43,9 @@ export const RoomsView: React.FC = () => {
     rooms,
     selectedRoomId,
     setSelectedRoomId,
+    joinedRoomIds,
+    joinRoom,
+    leaveRoom,
     addRoomMessage,
     createRoom,
     unlockedPrivateRoomIds,
@@ -65,8 +70,12 @@ export const RoomsView: React.FC = () => {
   const [showOriginalMap, setShowOriginalMap] = useState<Record<string, boolean>>({});
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
+  // Leave room confirmation & notices
+  const [isConfirmingLeaveRoom, setIsConfirmingLeaveRoom] = useState(false);
+  const [leaveRoomNotification, setLeaveRoomNotification] = useState<string | null>(null);
+
   // Faith Boundary & Room Filtering
-  const [roomFilterMode, setRoomFilterMode] = useState<'my_faith' | 'all'>('my_faith');
+  const [roomFilterMode, setRoomFilterMode] = useState<'my_faith' | 'joined' | 'all'>('my_faith');
 
   // Private Room Unlock State
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
@@ -206,6 +215,35 @@ export const RoomsView: React.FC = () => {
               Return to Circles
             </button>
             <div className="flex items-center gap-2">
+              {/* Member / Join / Leave Actions */}
+              {joinedRoomIds.includes(selectedRoom.id) ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 font-medium flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Member
+                  </span>
+                  <button
+                    onClick={() => setIsConfirmingLeaveRoom(true)}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-serif border border-rose-300/40 hover:border-rose-500 text-rose-600 hover:bg-rose-500/10 flex items-center gap-1 transition-colors"
+                    title="Leave this circle"
+                  >
+                    <UserMinus className="w-3 h-3" />
+                    <span>Leave Circle</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    joinRoom(selectedRoom.id);
+                  }}
+                  className="px-3 py-1 rounded-full text-[11px] font-serif font-medium shadow-xs flex items-center gap-1 transition-transform hover:scale-102"
+                  style={{ backgroundColor: currentTone.primary, color: '#2C2520' }}
+                >
+                  <UserPlus className="w-3 h-3" />
+                  <span>Join Circle</span>
+                </button>
+              )}
+
               {/* Moderation Thresholds & Safety Queue Trigger */}
               <button
                 onClick={() => setIsModerationModalOpen(true)}
@@ -220,6 +258,45 @@ export const RoomsView: React.FC = () => {
               </span>
             </div>
           </div>
+
+          {/* Leave Room Confirmation Dialog */}
+          {isConfirmingLeaveRoom && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-xs space-y-2 animate-in fade-in">
+              <p className="font-serif text-rose-800 dark:text-rose-200 m-0">
+                <strong>Leave "{selectedRoom.title}"?</strong> You will be removed from this circle's active members list.
+              </p>
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  onClick={() => setIsConfirmingLeaveRoom(false)}
+                  className="px-3 py-1 rounded-full border border-stone-300/40 text-stone-500 hover:bg-stone-500/10"
+                >
+                  Stay in Circle
+                </button>
+                <button
+                  onClick={() => {
+                    leaveRoom(selectedRoom.id);
+                    setIsConfirmingLeaveRoom(false);
+                    setLeaveRoomNotification(`You have left "${selectedRoom.title}".`);
+                    setTimeout(() => {
+                      setLeaveRoomNotification(null);
+                      setSelectedRoomId(null);
+                    }, 1600);
+                  }}
+                  className="px-3 py-1 rounded-full bg-rose-600 text-white font-medium hover:bg-rose-700"
+                >
+                  Confirm Leave
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Room Notification */}
+          {leaveRoomNotification && (
+            <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2 animate-in fade-in">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span>{leaveRoomNotification}</span>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -775,6 +852,22 @@ export const RoomsView: React.FC = () => {
             <span>My Faith Sanctuary ({userProfile.primaryTradition})</span>
           </button>
           <button
+            onClick={() => setRoomFilterMode('joined')}
+            className={`px-4 py-1.5 rounded-full font-serif text-xs transition-all flex items-center gap-1.5 ${
+              roomFilterMode === 'joined'
+                ? 'font-medium shadow-xs'
+                : 'text-stone-500 border border-stone-300/40 hover:text-stone-700 dark:hover:text-stone-300'
+            }`}
+            style={{
+              backgroundColor: roomFilterMode === 'joined' ? `${currentTone.primary}25` : 'transparent',
+              borderColor: roomFilterMode === 'joined' ? currentTone.primary : undefined,
+              color: roomFilterMode === 'joined' ? currentTone.primary : undefined,
+            }}
+          >
+            <CheckCircle className="w-3.5 h-3.5" />
+            <span>Joined Circles ({joinedRoomIds.length})</span>
+          </button>
+          <button
             onClick={() => setRoomFilterMode('all')}
             className={`px-4 py-1.5 rounded-full font-serif text-xs transition-all flex items-center gap-1.5 ${
               roomFilterMode === 'all'
@@ -798,6 +891,7 @@ export const RoomsView: React.FC = () => {
         {displayedRooms.map((room) => {
           const hasActivity = room.activityStatus === 'active' || room.activityStatus === 'glowing';
           const isLockedPrivate = room.isPrivate && !unlockedPrivateRoomIds.includes(room.id);
+          const isJoined = joinedRoomIds.includes(room.id);
 
           return (
             <div
@@ -824,6 +918,12 @@ export const RoomsView: React.FC = () => {
                     {room.tradition}
                   </span>
                   <div className="flex items-center gap-1.5">
+                    {isJoined && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-serif flex items-center gap-1">
+                        <CheckCircle className="w-2.5 h-2.5" />
+                        Joined
+                      </span>
+                    )}
                     {room.isPrivate && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-serif flex items-center gap-1">
                         <Lock className="w-2.5 h-2.5" />

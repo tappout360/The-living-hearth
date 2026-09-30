@@ -12,6 +12,8 @@ import {
   VolumeX,
   AlertTriangle,
   BookmarkCheck,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 
 export const PrayerDetailModal: React.FC = () => {
@@ -19,11 +21,15 @@ export const PrayerDetailModal: React.FC = () => {
     activePrayerDetail,
     setActivePrayerDetail,
     respondToPrayer,
+    editPrayer,
+    deletePrayer,
     mutePrayerSender,
     blockUser,
     hearthTone,
     timeOfDay,
     currentLanguage,
+    authSession,
+    userProfile,
   } = useHearth();
 
   const [showTranslation, setShowTranslation] = useState(false);
@@ -32,10 +38,37 @@ export const PrayerDetailModal: React.FC = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSavedToList, setIsSavedToList] = useState(false);
 
+  // Edit & Delete state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
   if (!activePrayerDetail) return null;
+
+  const currentHandle = authSession?.handle || userProfile.displayName;
+  const isOwner =
+    activePrayerDetail.destinationType === 'journal' ||
+    !activePrayerDetail.senderName ||
+    activePrayerDetail.senderName === currentHandle ||
+    activePrayerDetail.senderName.toLowerCase() === 'you';
 
   const currentTone = HEARTH_TONES[hearthTone];
   const translated = translateSpiritualText(activePrayerDetail.content, currentLanguage);
+
+  const handleStartEdit = () => {
+    setEditTitle(activePrayerDetail.title);
+    setEditContent(activePrayerDetail.content);
+    setIsEditing(true);
+    setIsConfirmingDelete(false);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTitle.trim() || !editContent.trim()) return;
+    await editPrayer(activePrayerDetail.id, editTitle.trim(), editContent.trim());
+    setIsEditing(false);
+  };
 
   const handleSendReply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,42 +149,110 @@ export const PrayerDetailModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Intention Body */}
+        {/* Intention Body or Edit Form */}
         <div className="py-5 space-y-4">
-          <div className="p-5 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-stone-500">
-                {activePrayerDetail.isAnonymous
-                  ? 'Offered anonymously with gentle reverence'
-                  : `From: ${activePrayerDetail.senderName || 'Hearth Companion'}`}
-                {activePrayerDetail.recipientName && ` → To: ${activePrayerDetail.recipientName}`}
-              </span>
-
-              {/* Translation Toggle */}
-              <button
-                onClick={() => setShowTranslation(!showTranslation)}
-                className="text-xs font-serif flex items-center gap-1 px-2.5 py-1 rounded-full border border-stone-300/30 hover:border-amber-400 transition-colors"
-              >
-                <Languages className="w-3.5 h-3.5 text-amber-500" />
-                <span>{showTranslation ? 'See original' : 'See translation'}</span>
-              </button>
-            </div>
-
-            <p className="font-serif text-base leading-relaxed italic text-stone-800 dark:text-stone-200">
-              “{showTranslation ? translated.translated : activePrayerDetail.content}”
-            </p>
-
-            {showTranslation && translated.termInfo && (
-              <div className="pt-2 border-t border-stone-200/20 text-xs text-stone-500">
-                <span className="font-medium text-amber-600 block mb-1">
-                  Sacred Term Retained:
-                </span>
-                <span className="inline-block px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px]">
-                  <strong>{translated.termInfo.transliteration}</strong> ({translated.termInfo.gloss})
-                </span>
+          {isEditing ? (
+            <form onSubmit={handleSaveEdit} className="p-5 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-3">
+              <div>
+                <label className="text-xs font-serif text-stone-400 block mb-1">Title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-stone-500/10 border border-stone-300/30 text-sm font-serif focus:outline-none focus:border-amber-400"
+                  placeholder="Prayer or Intention Title"
+                  required
+                />
               </div>
-            )}
-          </div>
+              <div>
+                <label className="text-xs font-serif text-stone-400 block mb-1">Prayer & Intention Content</label>
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={4}
+                  className="w-full p-3 rounded-xl bg-stone-500/10 border border-stone-300/30 text-sm font-serif leading-relaxed focus:outline-none focus:border-amber-400"
+                  placeholder="Edit your sacred intention..."
+                  required
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-3 py-1.5 rounded-full text-xs font-serif border border-stone-300/30 hover:bg-stone-500/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-full text-xs font-serif font-medium shadow-xs"
+                  style={{ backgroundColor: currentTone.primary, color: '#2C2520' }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="p-5 rounded-2xl bg-stone-500/5 border border-stone-200/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-stone-500">
+                  {activePrayerDetail.isAnonymous
+                    ? 'Offered anonymously with gentle reverence'
+                    : `From: ${activePrayerDetail.senderName || 'Hearth Companion'}`}
+                  {activePrayerDetail.recipientName && ` → To: ${activePrayerDetail.recipientName}`}
+                </span>
+
+                {/* Translation Toggle */}
+                <button
+                  onClick={() => setShowTranslation(!showTranslation)}
+                  className="text-xs font-serif flex items-center gap-1 px-2.5 py-1 rounded-full border border-stone-300/30 hover:border-amber-400 transition-colors"
+                >
+                  <Languages className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{showTranslation ? 'See original' : 'See translation'}</span>
+                </button>
+              </div>
+
+              <p className="font-serif text-base leading-relaxed italic text-stone-800 dark:text-stone-200">
+                “{showTranslation ? translated.translated : activePrayerDetail.content}”
+              </p>
+
+              {showTranslation && translated.termInfo && (
+                <div className="pt-2 border-t border-stone-200/20 text-xs text-stone-500">
+                  <span className="font-medium text-amber-600 block mb-1">
+                    Sacred Term Retained:
+                  </span>
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px]">
+                    <strong>{translated.termInfo.transliteration}</strong> ({translated.termInfo.gloss})
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Delete Confirmation Banner */}
+          {isConfirmingDelete && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-xs space-y-2 animate-in fade-in">
+              <p className="font-serif text-rose-800 dark:text-rose-200 m-0">
+                <strong>Permanently delete this prayer?</strong> This will remove the record from your personal sanctuary vault immediately.
+              </p>
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingDelete(false)}
+                  className="px-3 py-1 rounded-full border border-stone-300/40 text-stone-500 hover:bg-stone-500/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deletePrayer(activePrayerDetail.id)}
+                  className="px-3 py-1 rounded-full bg-rose-600 text-white font-medium hover:bg-rose-700"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Action Row */}
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -165,6 +266,28 @@ export const PrayerDetailModal: React.FC = () => {
                 <BookmarkCheck className="w-3.5 h-3.5" />
                 <span>{isSavedToList ? 'Added to Personal List' : 'Add to Personal Prayer List'}</span>
               </button>
+
+              {/* Owner Controls: Edit & Delete */}
+              {isOwner && (
+                <div className="flex items-center gap-1.5 border-l border-stone-200/20 pl-2">
+                  <button
+                    onClick={handleStartEdit}
+                    className="px-2.5 py-1 rounded-full border border-stone-300/40 hover:border-amber-400 flex items-center gap-1 text-[11px] font-serif transition-colors"
+                    title="Edit your prayer"
+                  >
+                    <Edit3 className="w-3 h-3 text-amber-500" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => setIsConfirmingDelete(true)}
+                    className="px-2.5 py-1 rounded-full border border-rose-300/40 hover:border-rose-500 text-rose-600 flex items-center gap-1 text-[11px] font-serif transition-colors"
+                    title="Delete your prayer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 text-stone-400">

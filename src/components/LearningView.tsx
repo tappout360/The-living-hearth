@@ -27,7 +27,13 @@ import { TraditionVisual } from './ReligiousVisuals';
 import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 
 export const LearningView: React.FC = () => {
-  const { hearthTone, timeOfDay, setIsPrayComposerOpen } = useHearth();
+  const {
+    hearthTone,
+    timeOfDay,
+    setIsPrayComposerOpen,
+    completedLessonIds,
+    toggleLessonComplete,
+  } = useHearth();
   const currentTone = HEARTH_TONES[hearthTone];
 
   // Active top-level mode: 'paths' or 'inventory' (Leave Out None roadmap)
@@ -191,10 +197,25 @@ export const LearningView: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 text-emerald-600 font-mono text-xs">
-              <CheckCircle className="w-4 h-4" />
-              <span>Lesson Complete</span>
-            </div>
+            <button
+              onClick={() => toggleLessonComplete(selectedLesson.id)}
+              className={`px-4 py-2 rounded-full border flex items-center gap-1.5 font-serif text-xs transition-colors ${
+                completedLessonIds.includes(selectedLesson.id)
+                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
+                  : 'hover:bg-stone-500/10 border-stone-300/40 text-stone-600 dark:text-stone-300'
+              }`}
+            >
+              <CheckCircle2
+                className={`w-4 h-4 ${
+                  completedLessonIds.includes(selectedLesson.id) ? 'text-emerald-500' : 'text-stone-400'
+                }`}
+              />
+              <span>
+                {completedLessonIds.includes(selectedLesson.id)
+                  ? 'Completed (Click to Re-study)'
+                  : 'Mark as Complete'}
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -339,11 +360,16 @@ export const LearningView: React.FC = () => {
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-serif text-xs font-semibold"
                   style={{
-                    backgroundColor: `${currentTone.primary}20`,
-                    border: `1.5px solid ${currentTone.primary}`,
+                    backgroundColor: completedLessonIds.includes(lesson.id) ? 'rgba(16, 185, 129, 0.15)' : `${currentTone.primary}20`,
+                    border: completedLessonIds.includes(lesson.id) ? '1.5px solid rgba(16, 185, 129, 0.8)' : `1.5px solid ${currentTone.primary}`,
+                    color: completedLessonIds.includes(lesson.id) ? '#10B981' : 'inherit',
                   }}
                 >
-                  {idx + 1}
+                  {completedLessonIds.includes(lesson.id) ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  ) : (
+                    idx + 1
+                  )}
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -351,6 +377,12 @@ export const LearningView: React.FC = () => {
                       <Clock className="w-3 h-3" />
                       {lesson.estimatedMinutes} min
                     </span>
+                    {completedLessonIds.includes(lesson.id) && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono flex items-center gap-1">
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                        Completed
+                      </span>
+                    )}
                     {lesson.comparativeLinks && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
                         Comparative Links

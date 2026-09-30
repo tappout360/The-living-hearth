@@ -79,6 +79,9 @@ interface HearthContextType {
   rooms: Room[];
   selectedRoomId: string | null;
   setSelectedRoomId: (id: string | null) => void;
+  joinedRoomIds: string[];
+  joinRoom: (roomId: string) => void;
+  leaveRoom: (roomId: string) => void;
   addRoomMessage: (roomId: string, content: string, mode: 'Practice' | 'Learning' | 'Discussion', isAnonymous: boolean) => void;
   createRoom: (title: string, tradition: string, description: string, isPrivate: boolean, inviteEmails?: string[]) => string;
   unlockedPrivateRoomIds: string[];
@@ -100,6 +103,8 @@ interface HearthContextType {
   // Prayers / Intentions
   prayers: PrayerIntention[];
   addPrayer: (prayer: Omit<PrayerIntention, 'id' | 'timestamp' | 'sourceLanguage' | 'queuedOffline'>) => Promise<{ queued: boolean; error?: string }>;
+  editPrayer: (prayerId: string, title: string, content: string) => Promise<void>;
+  deletePrayer: (prayerId: string) => void;
   activePrayerDetail: PrayerIntention | null;
   setActivePrayerDetail: (prayer: PrayerIntention | null) => void;
   respondToPrayer: (prayerId: string, content: string, isAnonymous: boolean, visibility: 'private_to_sender' | 'room_visible') => void;
@@ -124,6 +129,8 @@ interface HearthContextType {
   learningModules: LearningModule[];
   selectedLearningId: string | null;
   setSelectedLearningId: (id: string | null) => void;
+  completedLessonIds: string[];
+  toggleLessonComplete: (lessonId: string) => void;
 
   // Safety & HIPAA
   compliance: ComplianceState;
@@ -484,6 +491,27 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
+  const [joinedRoomIds, setJoinedRoomIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_joined_rooms');
+      return saved ? JSON.parse(saved) : ['room-1', 'room-3'];
+    } catch {
+      return ['room-1', 'room-3'];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_joined_rooms', JSON.stringify(joinedRoomIds));
+  }, [joinedRoomIds]);
+
+  const joinRoom = (roomId: string) => {
+    setJoinedRoomIds((prev) => (prev.includes(roomId) ? prev : [...prev, roomId]));
+  };
+
+  const leaveRoom = (roomId: string) => {
+    setJoinedRoomIds((prev) => prev.filter((id) => id !== roomId));
+  };
+
   const [unlockedPrivateRoomIds, setUnlockedPrivateRoomIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('hearth_unlocked_rooms');
@@ -627,6 +655,25 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Learning Modules
   const [learningModules, setLearningModules] = useState<LearningModule[]>(INITIAL_LEARNING_MODULES);
   const [selectedLearningId, setSelectedLearningId] = useState<string | null>(null);
+
+  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_completed_lessons');
+      return saved ? JSON.parse(saved) : ['sub-christ-1'];
+    } catch {
+      return ['sub-christ-1'];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_completed_lessons', JSON.stringify(completedLessonIds));
+  }, [completedLessonIds]);
+
+  const toggleLessonComplete = (lessonId: string) => {
+    setCompletedLessonIds((prev) =>
+      prev.includes(lessonId) ? prev.filter((id) => id !== lessonId) : [...prev, lessonId]
+    );
+  };
 
   // Modals
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
@@ -966,6 +1013,49 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { queued: isOfflineMode };
   };
 
+  const editPrayer = async (prayerId: string, title: string, content: string): Promise<void> => {
+    const activeKey = SanctuaryAuthService.getActiveKey();
+    let encryptedPayload: string | undefined = undefined;
+    let isEncrypted = false;
+
+    const target = prayers.find((p) => p.id === prayerId);
+    if (target?.destinationType === 'journal' && activeKey && window.crypto?.subtle) {
+      try {
+        const encObj = await encryptText(content, activeKey);
+        isEncrypted = true;
+        encryptedPayload = JSON.stringify(encObj);
+      } catch (e) {
+        console.warn('Re-encryption error on edit', e);
+      }
+    }
+
+    setPrayers((prev) =>
+      prev.map((p) => {
+        if (p.id === prayerId) {
+          return {
+            ...p,
+            title,
+            content,
+            isEncrypted: isEncrypted || p.isEncrypted,
+            encryptedPayload: encryptedPayload ?? p.encryptedPayload,
+          };
+        }
+        return p;
+      })
+    );
+
+    if (activePrayerDetail?.id === prayerId) {
+      setActivePrayerDetail((prev) => (prev ? { ...prev, title, content } : null));
+    }
+  };
+
+  const deletePrayer = (prayerId: string): void => {
+    setPrayers((prev) => prev.filter((p) => p.id !== prayerId));
+    if (activePrayerDetail?.id === prayerId) {
+      setActivePrayerDetail(null);
+    }
+  };
+
   const respondToPrayer = (
     prayerId: string,
     content: string,
@@ -1070,6 +1160,8 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       userProfile,
       prayers,
       invitations,
+      joinedRoomIds,
+      completedLessonIds,
       savedLearning: learningModules.filter((m) => m.progressPercent > 0),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1084,6 +1176,8 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const purgeUserData = () => {
     setPrayers([]);
     setInvitations([]);
+    setJoinedRoomIds([]);
+    setCompletedLessonIds([]);
     setLearningModules((prev) => prev.map((m) => ({ ...m, progressPercent: 0 })));
     localStorage.clear();
     SanctuaryAuthService.createAnonymousGuestVault().then(({ session }) => {
@@ -1132,12 +1226,17 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         rooms,
         selectedRoomId,
         setSelectedRoomId,
+        joinedRoomIds,
+        joinRoom,
+        leaveRoom,
         addRoomMessage,
         createRoom,
         unlockedPrivateRoomIds,
         unlockPrivateRoom,
         prayers,
         addPrayer,
+        editPrayer,
+        deletePrayer,
         activePrayerDetail,
         setActivePrayerDetail,
         respondToPrayer,
@@ -1158,6 +1257,8 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         learningModules,
         selectedLearningId,
         setSelectedLearningId,
+        completedLessonIds,
+        toggleLessonComplete,
         compliance,
         scanForPhiAndSafety,
         isOnboardingOpen,
