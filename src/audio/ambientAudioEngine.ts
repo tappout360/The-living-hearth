@@ -180,7 +180,9 @@ class AmbientAudioEngine {
       try {
         node.stop();
         node.disconnect();
-      } catch (e) {}
+      } catch {
+        // Ignored
+      }
     });
     this.oscNodes = [];
 
@@ -188,14 +190,18 @@ class AmbientAudioEngine {
       try {
         this.noiseNode.stop();
         this.noiseNode.disconnect();
-      } catch (e) {}
+      } catch {
+        // Ignored
+      }
       this.noiseNode = null;
     }
 
     this.gainNodes.forEach((node) => {
       try {
         node.disconnect();
-      } catch (e) {}
+      } catch {
+        // Ignored
+      }
     });
     this.gainNodes = [];
   }

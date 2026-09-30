@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useHearth } from '../context/HearthContext';
 import { HEARTH_TONES } from '../data/mockData';
 import {
@@ -118,7 +118,7 @@ export const ScriptureStudyView: React.FC = () => {
   };
 
   // Toggle Highlight on Verse
-  const handleToggleHighlight = (verseNumber: number) => {
+  const handleToggleHighlight = useCallback((verseNumber: number) => {
     if (!activeChapter) return;
     const existingIdx = highlights.findIndex(
       (h) => h.chapterId === activeChapter.id && h.verseNumber === verseNumber
@@ -140,7 +140,7 @@ export const ScriptureStudyView: React.FC = () => {
     } else {
       // Add new highlight
       const newHighlight: VerseHighlight = {
-        id: `hl-${Date.now()}-${verseNumber}`,
+        id: `hl-${verseNumber}-${Math.random().toString(36).substring(2, 9)}`,
         chapterId: activeChapter.id,
         verseNumber,
         color: activeHighlightColor,
@@ -148,7 +148,7 @@ export const ScriptureStudyView: React.FC = () => {
       };
       setHighlights((prev) => [...prev, newHighlight]);
     }
-  };
+  }, [activeChapter, highlights, activeHighlightColor]);
 
   const getVerseHighlight = (verseNumber: number): VerseHighlight | undefined => {
     if (!activeChapter) return undefined;
@@ -215,7 +215,7 @@ export const ScriptureStudyView: React.FC = () => {
     const lines = importTextContent.split('\n').filter((l) => l.trim().length > 0);
     const verses: ScriptureVerse[] = lines.map((line, idx) => {
       // Check if line starts with a number like "1. " or "1 "
-      const match = line.match(/^(\d+)[\.\s]+(.+)$/);
+      const match = line.match(/^(\d+)[.\s]+(.+)$/);
       if (match) {
         return { number: parseInt(match[1], 10), text: match[2].trim() };
       }
