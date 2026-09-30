@@ -8,6 +8,9 @@ import { ScriptureStudyView } from './components/ScriptureStudyView';
 import { ChurchEventsView } from './components/ChurchEventsView';
 import { LearningView } from './components/LearningView';
 import { ProfileSafetyView } from './components/ProfileSafetyView';
+import { StoreView } from './components/StoreView';
+import { SubscriptionView } from './components/SubscriptionView';
+import { AuthModal } from './components/AuthModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { PrayComposerModal } from './components/PrayComposerModal';
 import { InvitationsModal } from './components/InvitationsModal';
@@ -18,7 +21,14 @@ import { SUPPORTED_LANGUAGES } from './i18n/languages';
 import './App.css';
 
 const MainSanctuary: React.FC = () => {
-  const { timeOfDay, activeTab, accessibility, currentLanguage } = useHearth();
+  const {
+    timeOfDay,
+    activeTab,
+    accessibility,
+    currentLanguage,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+  } = useHearth();
 
   const activeLangConfig = SUPPORTED_LANGUAGES.find((l) => l.code === currentLanguage) || SUPPORTED_LANGUAGES[0];
   const isRTL = activeLangConfig.dir === 'rtl';
@@ -46,6 +56,8 @@ const MainSanctuary: React.FC = () => {
 
   const getAtmosphereMode = () => {
     switch (activeTab) {
+      case 'store':
+      case 'subscription':
       case 'learn':
       case 'scripture':
       case 'churches':
@@ -83,6 +95,8 @@ const MainSanctuary: React.FC = () => {
         {activeTab === 'rooms' && <RoomsView />}
         {activeTab === 'scripture' && <ScriptureStudyView />}
         {activeTab === 'churches' && <ChurchEventsView />}
+        {activeTab === 'store' && <StoreView />}
+        {activeTab === 'subscription' && <SubscriptionView />}
         {activeTab === 'learn' && <LearningView />}
         {activeTab === 'profile' && <ProfileSafetyView />}
       </main>
@@ -93,6 +107,7 @@ const MainSanctuary: React.FC = () => {
       <InvitationsModal />
       <PrayerDetailModal />
       <SanctuaryProtocolModal />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 };

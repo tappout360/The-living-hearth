@@ -21,6 +21,9 @@ import {
   Lock,
   KeyRound,
   Sparkles,
+  User,
+  Crown,
+  ShoppingBag,
 } from 'lucide-react';
 import { SacredVisualsGalleryModal } from './SacredVisualsGalleryModal';
 import type { HearthTone, TimeOfDay } from '../types';
@@ -49,6 +52,10 @@ export const Header: React.FC = () => {
     lockVault,
     lastSyncNotice,
     clearSyncNotice,
+    account,
+    setIsAuthModalOpen,
+    setActiveTab,
+    cart,
   } = useHearth();
 
   const [isA11yOpen, setIsA11yOpen] = useState(false);
@@ -173,6 +180,70 @@ export const Header: React.FC = () => {
                 >
                   {pendingInvitesCount}
                 </span>
+              )}
+            </button>
+
+            {/* Sacred Store Shortcut */}
+            <button
+              onClick={() => setActiveTab('store')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all hover:scale-102"
+              style={{
+                borderColor: currentTone.primary,
+                backgroundColor: timeOfDay === 'night' ? '#3B332B' : '#FFFFFF',
+                color: timeOfDay === 'night' ? '#F9F4EF' : '#2C2520',
+              }}
+              title="Sacred Store & Prayer Class Materials"
+              aria-label="Sacred Store"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-[11px] font-serif hidden md:inline">Store</span>
+              {cart.length > 0 && (
+                <span
+                  className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold leading-tight"
+                  style={{
+                    backgroundColor: currentTone.primary,
+                    color: '#2C2520',
+                  }}
+                >
+                  {cart.reduce((a, b) => a + b.quantity, 0)}
+                </span>
+              )}
+            </button>
+
+            {/* Patronage / Subscriptions Shortcut */}
+            <button
+              onClick={() => setActiveTab('subscription')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all hover:scale-102"
+              style={{
+                borderColor: `${currentTone.primary}80`,
+                backgroundColor: `${currentTone.primary}15`,
+                color: currentTone.primary,
+              }}
+              title="Sustaining Patronage & Subscription Details"
+              aria-label="Sanctuary Patronage & Subscriptions"
+            >
+              <Crown className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-serif hidden lg:inline">Patronage</span>
+            </button>
+
+            {/* Account Profile & Authentication Trigger */}
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-xs"
+              style={{
+                borderColor: currentTone.primary,
+                backgroundColor: currentTone.lightBg,
+                color: currentTone.primary,
+              }}
+              title="Sanctuary Account, Login & Profile"
+              aria-label="Account and Authentication"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-serif font-semibold">
+                {account.isAuthenticated ? account.displayName : 'Sign In'}
+              </span>
+              {account.subscriptionTier !== 'free' && (
+                <Crown className="w-3 h-3 text-amber-500 fill-current" />
               )}
             </button>
 

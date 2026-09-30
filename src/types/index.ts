@@ -277,5 +277,55 @@ export type SanctuaryTab =
   | 'learn'
   | 'scripture'
   | 'churches'
+  | 'store'
+  | 'subscription'
   | 'profile';
+
+export type SubscriptionTier = 'free' | 'pilgrim' | 'congregation';
+export type SubscriptionBilling = 'monthly' | 'annual';
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  displayName: string;
+  isAuthenticated: boolean;
+  subscriptionTier: SubscriptionTier;
+  subscriptionBilling: SubscriptionBilling;
+  subscriptionRenewsAt?: string;
+  joinedAt: string;
+  hardshipSponsored?: boolean;
+}
+
+export type StoreCategory =
+  | 'scriptures_bibles'
+  | 'prayer_aids'
+  | 'sanctuary_home'
+  | 'class_study';
+
+export interface StoreProduct {
+  id: string;
+  traditionId: 'christianity' | 'islam' | 'judaism' | 'hinduism' | 'buddhism' | 'interfaith';
+  traditionName: string;
+  title: string;
+  subtitle: string;
+  category: StoreCategory;
+  price: number;
+  pilgrimPrice: number;
+  description: string;
+  details: string[];
+  inStock: boolean;
+  rating: number;
+  reviewCount: number;
+  supplierName: string;
+  sku: string;
+  tags: string[];
+  iconEmoji: string;
+  associatedStudyClass?: string;
+}
+
+export interface CartItem {
+  product: StoreProduct;
+  quantity: number;
+}
+
 

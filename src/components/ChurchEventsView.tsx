@@ -21,10 +21,77 @@ import {
   X,
   AlertTriangle,
   MapPin,
+  GraduationCap,
+  Calendar,
+  BookOpen,
 } from 'lucide-react';
 
+interface PrayerStudyClass {
+  id: string;
+  religionId: MajorReligionId;
+  title: string;
+  instructor: string;
+  schedule: string;
+  description: string;
+  companionWorkbookTitle: string;
+  enrolledCount: number;
+}
+
+const PRAYER_STUDY_CLASSES: PrayerStudyClass[] = [
+  {
+    id: 'cls-chr-01',
+    religionId: 'christianity',
+    title: 'The Beatitudes of Grace: 8-Week Contemplative Class',
+    instructor: 'Pastor David & Rev. Sarah Mitchell',
+    schedule: 'Every Tuesday at 7:00 PM CST',
+    description: 'Verse-by-verse slow immersion into Matthew 5. Focus on the inner postures of spiritual poverty, meekness, and pure peacemaking.',
+    companionWorkbookTitle: 'The Beatitudes of Grace: 8-Week Scripture Class Workbook',
+    enrolledCount: 68,
+  },
+  {
+    id: 'cls-isl-01',
+    religionId: 'islam',
+    title: 'Tajweed Recitation & Heart of the Qur\'an',
+    instructor: 'Ustadh Tariq Al-Baqir',
+    schedule: 'Every Wednesday at 6:30 PM EST',
+    description: 'Master the vocal science of Tajweed while exploring Surah Al-Fatiha and Ayat al-Kursi with classical spiritual tafsir.',
+    companionWorkbookTitle: 'The Noble Qur\'an: Tajweed Color-Coded Study Edition',
+    enrolledCount: 92,
+  },
+  {
+    id: 'cls-jud-01',
+    religionId: 'judaism',
+    title: 'Pirkei Avot: Living the Ethics of the Sages',
+    instructor: 'Rabbi Jonathan Levi',
+    schedule: 'Every Thursday at 7:30 PM EST',
+    description: 'In-depth Shabbat preparation class analyzing the ethical aphorisms of Hillel, Shammai, and Akiva for moral daily living.',
+    companionWorkbookTitle: 'Pirkei Avot: Ethics of the Sages Study Companion',
+    enrolledCount: 54,
+  },
+  {
+    id: 'cls-hin-01',
+    religionId: 'hinduism',
+    title: 'Bhagavad Gita: Journey of the Soul (Chapter 2)',
+    instructor: 'Swami Vedananda',
+    schedule: 'Every Saturday at 9:00 AM PST',
+    description: 'Detailed analysis of Krishna\'s discourse on the indestructible nature of the Atman and the practice of Karma Yoga.',
+    companionWorkbookTitle: 'The Bhagavad Gita: Devanagari & Verse-by-Verse Study Edition',
+    enrolledCount: 77,
+  },
+  {
+    id: 'cls-bud-01',
+    religionId: 'buddhism',
+    title: 'Four Foundations of Mindfulness (Satipatthāna)',
+    instructor: 'Bhikkhu Dhammarakkhita',
+    schedule: 'Every Sunday at 5:00 PM PST',
+    description: 'Weekly meditation coaching and sutta study exploring mindfulness of breath, bodily postures, and mental sensations.',
+    companionWorkbookTitle: 'The Satipatthāna Sutta: Mindfulness Class Study Manual',
+    enrolledCount: 110,
+  },
+];
+
 export const ChurchEventsView: React.FC = () => {
-  const { hearthTone, timeOfDay, userProfile } = useHearth();
+  const { hearthTone, timeOfDay, userProfile, setActiveTab } = useHearth();
   const currentTone = HEARTH_TONES[hearthTone];
 
   const mapTraditionToMajorReligion = (trad: string): MajorReligionId => {
@@ -49,11 +116,33 @@ export const ChurchEventsView: React.FC = () => {
   ]);
   const [streamSafetyAlert, setStreamSafetyAlert] = useState<SafetyAnalysisResult | null>(null);
 
+  const [registeredClassIds, setRegisteredClassIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('hearth_registered_classes');
+      return saved ? JSON.parse(saved) : ['cls-chr-01'];
+    } catch {
+      return ['cls-chr-01'];
+    }
+  });
+
+  const toggleClassRegistration = (classId: string) => {
+    setRegisteredClassIds((prev) => {
+      const next = prev.includes(classId)
+        ? prev.filter((id) => id !== classId)
+        : [...prev, classId];
+      localStorage.setItem('hearth_registered_classes', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const filteredHouses = VERIFIED_HOUSES_OF_WORSHIP.filter(
     (h) => h.religionId === selectedReligion
   );
   const filteredEvents = CHURCH_BROADCAST_EVENTS.filter(
     (e) => e.religionId === selectedReligion
+  );
+  const filteredClasses = PRAYER_STUDY_CLASSES.filter(
+    (c) => c.religionId === selectedReligion
   );
 
   const handleSendAffirmation = (e: React.FormEvent) => {
@@ -250,6 +339,101 @@ export const ChurchEventsView: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 2.5. Upcoming Prayer & Scripture Classes (Interactive with Store Companions) */}
+      <section className="space-y-4 pt-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-serif text-lg font-normal m-0 text-stone-100">
+              Upcoming Prayer & Scripture Classes
+            </h3>
+          </div>
+          <span className="text-xs text-stone-400 font-mono">
+            {filteredClasses.length} Scheduled Circle{filteredClasses.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        <p className="text-xs text-stone-400 m-0 -mt-2">
+          Reverent, verse-by-verse spiritual instruction guided by verified educators. Download official companion study workbooks directly from our sacred store.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredClasses.map((cls) => {
+            const isRegistered = registeredClassIds.includes(cls.id);
+            return (
+              <div
+                key={cls.id}
+                className="p-5 rounded-2xl border border-stone-800 bg-stone-900/60 flex flex-col justify-between space-y-4 hover:border-stone-700 transition"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-stone-300 font-medium">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                      {cls.schedule}
+                    </span>
+                    <span className="text-[11px] text-stone-500 font-mono">
+                      {cls.enrolledCount + (isRegistered ? 1 : 0)} Enrolled
+                    </span>
+                  </div>
+
+                  <h4 className="font-serif text-base text-stone-100 font-normal m-0">
+                    {cls.title}
+                  </h4>
+                  <p className="text-xs text-stone-400 m-0 leading-relaxed">
+                    {cls.description}
+                  </p>
+
+                  <div className="text-[11px] text-stone-400">
+                    Teacher: <strong className="text-stone-300">{cls.instructor}</strong>
+                  </div>
+
+                  {/* Companion Workbook Link to Store */}
+                  <div className="p-3 rounded-xl bg-stone-950/70 border border-stone-800/80 flex items-center justify-between gap-2 mt-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-[10px] text-stone-500 uppercase font-semibold">
+                          Required / Recommended Study Workbook
+                        </div>
+                        <div className="text-xs text-stone-200 truncate font-medium">
+                          {cls.companionWorkbookTitle}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('store')}
+                      className="px-2.5 py-1 rounded-lg text-[11px] border border-stone-700 hover:border-stone-500 text-stone-300 hover:text-stone-100 whitespace-nowrap transition"
+                    >
+                      Get in Store
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-stone-800/80 flex items-center justify-between">
+                  <span className="text-[10px] text-stone-500 flex items-center gap-1 font-mono">
+                    <Shield className="w-3 h-3 text-emerald-500" />
+                    AI Guarded Circle
+                  </span>
+                  <button
+                    onClick={() => toggleClassRegistration(cls.id)}
+                    className={`px-4 py-1.5 rounded-xl text-xs font-medium transition ${
+                      isRegistered
+                        ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-800'
+                        : 'text-stone-950 shadow-sm'
+                    }`}
+                    style={{
+                      backgroundColor: isRegistered ? undefined : currentTone.primary,
+                    }}
+                  >
+                    {isRegistered ? '✓ Enrolled in Class' : 'Register for Class'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 

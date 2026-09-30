@@ -17,6 +17,11 @@ import type {
   LearningModule,
   SanctuaryAuthSession,
   SanctuaryTab,
+  UserAccount,
+  SubscriptionTier,
+  SubscriptionBilling,
+  StoreProduct,
+  CartItem,
 } from '../types';
 import {
   HEARTH_TONES,
@@ -138,6 +143,27 @@ interface HearthContextType {
   isOnline: boolean;
   offlineQueueCount: number;
 
+  // Account & Authentication
+  account: UserAccount;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  loginUser: (email: string, password?: string, displayName?: string) => void;
+  registerUser: (email: string, password?: string, displayName?: string, tradition?: string) => void;
+  logoutUser: () => void;
+
+  // Subscription & Patronage
+  updateSubscription: (tier: SubscriptionTier, billing?: SubscriptionBilling) => void;
+  requestHardshipSponsorship: () => void;
+
+  // Sacred Store & Cart
+  cart: CartItem[];
+  addToCart: (product: StoreProduct, quantity?: number) => void;
+  removeFromCart: (productId: string) => void;
+  updateCartQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  isCartOpen: boolean;
+  setIsCartOpen: (open: boolean) => void;
+
   // Data Sovereignty
   exportUserData: () => void;
   purgeUserData: () => void;
@@ -238,6 +264,147 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem('hearth_user_profile', JSON.stringify(userProfile));
   }, [userProfile]);
+
+  // User Account & Authentication
+  const [account, setAccount] = useState<UserAccount>(() => {
+    const saved = localStorage.getItem('hearth_user_account');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {
+      id: 'usr-jason-01',
+      email: 'jason@livinghearth.org',
+      displayName: 'Jason',
+      isAuthenticated: true,
+      subscriptionTier: 'free',
+      subscriptionBilling: 'monthly',
+      joinedAt: '2026-09-01T00:00:00Z',
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_user_account', JSON.stringify(account));
+  }, [account]);
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const loginUser = (email: string, _password?: string, displayName?: string) => {
+    const name = displayName || email.split('@')[0] || 'Sanctuary Pilgrim';
+    setAccount((prev) => ({
+      ...prev,
+      email,
+      displayName: name,
+      isAuthenticated: true,
+    }));
+    setUserProfile((prev) => ({
+      ...prev,
+      displayName: name,
+      email,
+    }));
+    setIsAuthModalOpen(false);
+  };
+
+  const registerUser = (email: string, _password?: string, displayName?: string, tradition?: string) => {
+    const name = displayName || email.split('@')[0] || 'Sanctuary Pilgrim';
+    const newAccount: UserAccount = {
+      id: `usr-${Date.now()}`,
+      email,
+      displayName: name,
+      isAuthenticated: true,
+      subscriptionTier: 'free',
+      subscriptionBilling: 'monthly',
+      joinedAt: new Date().toISOString(),
+    };
+    setAccount(newAccount);
+    setUserProfile((prev) => ({
+      ...prev,
+      displayName: name,
+      email,
+      primaryTradition: tradition || prev.primaryTradition,
+    }));
+    setIsAuthModalOpen(false);
+  };
+
+  const logoutUser = () => {
+    setAccount((prev) => ({
+      ...prev,
+      isAuthenticated: false,
+    }));
+  };
+
+  const updateSubscription = (tier: SubscriptionTier, billing: SubscriptionBilling = 'monthly') => {
+    setAccount((prev) => ({
+      ...prev,
+      subscriptionTier: tier,
+      subscriptionBilling: billing,
+      subscriptionRenewsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    }));
+  };
+
+  const requestHardshipSponsorship = () => {
+    setAccount((prev) => ({
+      ...prev,
+      subscriptionTier: 'pilgrim',
+      hardshipSponsored: true,
+      subscriptionRenewsAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    }));
+  };
+
+  // Sacred Store Cart
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('hearth_store_cart');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hearth_store_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const addToCart = (product: StoreProduct, quantity = 1) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+      return [...prev, { product, quantity }];
+    });
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const updateCartQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((item) =>
+        item.product.id === productId ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const clearCart = () => setCart([]);
 
   // Sovereign Sanctuary Auth & Vault State
   const [authSession, setAuthSession] = useState<SanctuaryAuthSession | null>(null);
@@ -1003,6 +1170,21 @@ export const HearthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsProtocolModalOpen,
         isOnline,
         offlineQueueCount,
+        account,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        loginUser,
+        registerUser,
+        logoutUser,
+        updateSubscription,
+        requestHardshipSponsorship,
+        cart,
+        addToCart,
+        removeFromCart,
+        updateCartQuantity,
+        clearCart,
+        isCartOpen,
+        setIsCartOpen,
         exportUserData,
         purgeUserData,
       }}
