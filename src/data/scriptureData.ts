@@ -3,7 +3,10 @@ export type MajorReligionId =
   | 'islam'
   | 'judaism'
   | 'hinduism'
-  | 'buddhism';
+  | 'buddhism'
+  | 'lds'
+  | 'spiritism'
+  | 'interfaith';
 
 export type HighlightColor = 'gold' | 'rose' | 'indigo' | 'sage';
 
@@ -109,6 +112,30 @@ export const MAJOR_RELIGIONS: {
     canonicalBooksCount: 26,
     description: 'The words of the Buddha on mindfulness, mental discipline, compassion, and the cessation of suffering.',
     primaryColors: { primary: '#D4A5A5', secondary: '#B87B7B' },
+  },
+  {
+    id: 'lds',
+    name: 'Latter-day Saint',
+    scriptureName: 'The Standard Works',
+    canonicalBooksCount: 4,
+    description: 'The sacred canon comprising the Holy Bible, the Book of Mormon: Another Testament of Jesus Christ, Doctrine & Covenants, and Pearl of Great Price.',
+    primaryColors: { primary: '#5C768D', secondary: '#3D546A' },
+  },
+  {
+    id: 'spiritism',
+    name: 'Spiritism (Kardec)',
+    scriptureName: 'The Spiritist Codification',
+    canonicalBooksCount: 5,
+    description: 'The philosophical and ethical codification of Allan Kardec exploring soul immortality, spiritual evolution, and Christ’s charity.',
+    primaryColors: { primary: '#798E9C', secondary: '#536875' },
+  },
+  {
+    id: 'interfaith',
+    name: 'Interfaith Wisdom',
+    scriptureName: 'Universal Wisdom & The Golden Rule',
+    canonicalBooksCount: 12,
+    description: 'Shared ethical teachings, sacred prayers of compassion, and contemplative insights across the world’s spiritual traditions.',
+    primaryColors: { primary: '#9B8B7A', secondary: '#756656' },
   },
 ];
 
@@ -495,6 +522,140 @@ export const PRELOADED_SCRIPTURE_BOOKS: ScriptureBook[] = [
             traditionOrSchool: 'Engaged Zen Buddhism',
             era: '20th Century',
             commentaryText: 'Thich Nhat Hanh reflects: "To smile in the face of anger is not weak; it is the courage of understanding that anger cannot put out anger."',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'book-of-mormon-select',
+    religionId: 'lds',
+    religionName: 'Latter-day Saint',
+    title: 'The Book of Mormon: Another Testament of Jesus Christ',
+    originalLanguage: 'Reformed Egyptian (Ancient Plates)',
+    standardTranslation: 'Official English Authorized Edition',
+    description: 'Ancient scripture of the Americas testifying of Jesus Christ, repentance, covenant grace, and personal revelation.',
+    chapters: [
+      {
+        id: 'bofm-alma-32',
+        bookId: 'book-of-mormon-select',
+        chapterNumber: 32,
+        title: 'Alma 32 — The Experiment on the Word',
+        theme: 'Planting faith as a seed and nurturing it through diligence and patience.',
+        verses: [
+          {
+            number: 21,
+            text: 'And now as I said concerning faith—faith is not to have a perfect knowledge of things; therefore if ye have faith ye hope for things which are not seen, which are true.',
+          },
+          {
+            number: 27,
+            text: 'But behold, if ye will awake and arouse your faculties, even to an experiment upon my words, and exercise a particle of faith, yea, even if ye can no more than desire to believe, let this desire work in you, even until ye believe after a manner that ye can give place for a portion of my words.',
+          },
+          {
+            number: 28,
+            text: 'Now, we will compare the word unto a seed. Now, if ye give place, that a seed may be planted in your heart, behold, if it be a true seed, or a good seed, if ye do not cast it out by your unbelief, that ye will resist the Spirit of the Lord, behold, it will begin to swell within your breasts...',
+          },
+        ],
+        optInPerspectives: [
+          {
+            id: 'persp-bofm-holland',
+            sourceTitle: 'General Conference Address: "Lord, I Believe"',
+            author: 'Elder Jeffrey R. Holland',
+            traditionOrSchool: 'Latter-day Saint Apostle',
+            era: '21st Century',
+            commentaryText: 'Belief does not require immediate perfection. Even a particle of honest desire to believe gives God room to plant His grace and begin the swelling of truth.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'spirits-book-select',
+    religionId: 'spiritism',
+    religionName: 'Spiritism (Kardec)',
+    title: 'The Spirits’ Book (Le Livre des Esprits)',
+    originalLanguage: 'French',
+    standardTranslation: 'Anna Blackwell & International Spiritist Council',
+    description: 'The foundational text of Spiritist philosophy on the immortality of the soul and universal moral duty.',
+    chapters: [
+      {
+        id: 'spirits-book-ch1',
+        bookId: 'spirits-book-select',
+        chapterNumber: 1,
+        title: 'First Principles — God and Universal Causality',
+        theme: 'The Supreme Intelligence, conscience, and the universal law of charity.',
+        verses: [
+          {
+            number: 1,
+            text: 'What is God? — God is the Supreme Intelligence, the first cause of all things.',
+          },
+          {
+            number: 621,
+            text: 'Where is the law of God written? — In the conscience.',
+          },
+          {
+            number: 886,
+            text: 'What is the true meaning of charity as Jesus understood it? — Benevolence toward everyone, indulgence for the imperfections of others, and forgiveness of offenses.',
+          },
+        ],
+        optInPerspectives: [
+          {
+            id: 'persp-spiritism-kardec',
+            sourceTitle: 'The Gospel According to Spiritism (Chapter XV)',
+            author: 'Allan Kardec',
+            traditionOrSchool: 'Spiritist Codification',
+            era: '1864 CE',
+            commentaryText: 'Without charity there is no salvation: salvation of the soul consists in shedding pride and egoism and practicing active solidarity with all suffering beings.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'interfaith-wisdom-select',
+    religionId: 'interfaith',
+    religionName: 'Interfaith Wisdom',
+    title: 'The Golden Rule & Universal Compassion Anthology',
+    originalLanguage: 'Multilingual (Hebrew, Greek, Arabic, Sanskrit, Pāli)',
+    standardTranslation: 'Parliament of the World’s Religions Edition',
+    description: 'The harmonious convergence of moral truth: Treat others as you wish to be treated.',
+    chapters: [
+      {
+        id: 'interfaith-ch1',
+        bookId: 'interfaith-wisdom-select',
+        chapterNumber: 1,
+        title: 'Convergence — The Ethic of Reciprocity',
+        theme: 'The universal consensus of love, justice, and kindness across all faiths.',
+        verses: [
+          {
+            number: 1,
+            text: 'Christianity: "In everything, do to others what you would have them do to you, for this sums up the Law and the Prophets." (Matthew 7:12)',
+          },
+          {
+            number: 2,
+            text: 'Islam: "None of you truly believes until he wishes for his brother what he wishes for himself." (40 Hadith of An-Nawawi, 13)',
+          },
+          {
+            number: 3,
+            text: 'Judaism: "What is hateful to you, do not do to your fellow: this is the whole Torah; the rest is explanation; go and learn." (Shabbat 31a, Hillel)',
+          },
+          {
+            number: 4,
+            text: 'Hinduism: "This is the sum of duty: do naught unto others which would cause you pain if done to you." (Mahābhārata 5:1517)',
+          },
+          {
+            number: 5,
+            text: 'Buddhism: "Treat not others in ways that you yourself would find hurtful." (Udanavarga 5:18)',
+          },
+        ],
+        optInPerspectives: [
+          {
+            id: 'persp-interfaith-khrung',
+            sourceTitle: 'Declaration Toward a Global Ethic',
+            author: 'Hans Küng',
+            traditionOrSchool: 'Global Interfaith Ethic',
+            era: '1993 CE',
+            commentaryText: 'No peace among the nations without peace among the religions. No peace among the religions without dialogue among the religions.',
           },
         ],
       },

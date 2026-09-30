@@ -132,6 +132,54 @@ export const VERIFIED_HOUSES_OF_WORSHIP: HouseOfWorship[] = [
     verifiedStatus: true,
     avatarIcon: '☸️',
   },
+
+  // 6. LATTER-DAY SAINTS
+  {
+    id: 'how-temple-square',
+    name: 'Temple Square Assembly & Tabernacle',
+    religionId: 'lds',
+    type: 'church',
+    denominationOrLineage: 'The Church of Jesus Christ of Latter-day Saints',
+    locationCity: 'Salt Lake City',
+    locationStateOrCountry: 'Utah, USA',
+    pastorOrLeader: 'Presiding Bishopric & General Authorities',
+    description: 'Home of the Tabernacle Choir, weekly Come Follow Me scripture study, and worldwide broadcast devotions.',
+    memberCount: 2200,
+    verifiedStatus: true,
+    avatarIcon: '🏛️',
+  },
+
+  // 7. SPIRITISM
+  {
+    id: 'how-kardec-center',
+    name: 'Spiritist Society & Allan Kardec Study Center',
+    religionId: 'spiritism',
+    type: 'church',
+    denominationOrLineage: 'Spiritist Codification (Allan Kardec)',
+    locationCity: 'Brasília / Miami',
+    locationStateOrCountry: 'Florida, USA & Brazil',
+    pastorOrLeader: 'Council of Spiritist Educators',
+    description: 'Weekly fraternal assistance, Gospel According to Spiritism lectures, and fluidic prayer healing vigils.',
+    memberCount: 640,
+    verifiedStatus: true,
+    avatarIcon: '🕊️',
+  },
+
+  // 8. INTERFAITH
+  {
+    id: 'how-interfaith-chapel',
+    name: 'Chapel of Universal Peace & Fellowship',
+    religionId: 'interfaith',
+    type: 'church',
+    denominationOrLineage: 'Universal Interfaith & Multifaith Fellowship',
+    locationCity: 'New York / Geneva',
+    locationStateOrCountry: 'New York, USA',
+    pastorOrLeader: 'Council of Multifaith Elders',
+    description: 'A shared sanctuary of mutual reverence, contemplative silence, and ethical cooperation across all traditions.',
+    memberCount: 1100,
+    verifiedStatus: true,
+    avatarIcon: '🕯️',
+  },
 ];
 
 export const CHURCH_BROADCAST_EVENTS: ChurchEventStream[] = [
@@ -237,6 +285,60 @@ export const CHURCH_BROADCAST_EVENTS: ChurchEventStream[] = [
     durationMinutes: 60,
     viewerCount: 380,
     sacredRhythmTag: 'Mindful Dharma',
+    quietModeActive: true,
+    publicAccessAllowed: false,
+  },
+
+  // Latter-day Saint Streams
+  {
+    id: 'evt-lds-general-conference',
+    houseOfWorshipId: 'how-temple-square',
+    houseOfWorshipName: 'Temple Square Assembly & Tabernacle',
+    religionId: 'lds',
+    title: 'Worldwide General Conference & Tabernacle Choir Devotional',
+    description: 'Apostolic sermons on faith in Jesus Christ, family devotion, covenant hope, and choral sacred hymns.',
+    broadcastType: 'live',
+    speaker: 'First Presidency & The Tabernacle Choir',
+    scheduledTime: 'Sunday 10:00 AM MST',
+    durationMinutes: 120,
+    viewerCount: 1850,
+    sacredRhythmTag: 'General Conference & Sabbath',
+    quietModeActive: true,
+    publicAccessAllowed: false,
+  },
+
+  // Spiritist Streams
+  {
+    id: 'evt-spiritism-sunday-gospel',
+    houseOfWorshipId: 'how-kardec-center',
+    houseOfWorshipName: 'Spiritist Society & Allan Kardec Study Center',
+    religionId: 'spiritism',
+    title: 'Sunday Gospel Study & Fluidic Healing Lecture',
+    description: 'Contemplative commentary on The Gospel According to Spiritism followed by silent fluidic prayer and mental passes.',
+    broadcastType: 'live',
+    speaker: 'Council of Spiritist Educators',
+    scheduledTime: 'Sunday 5:00 PM EST',
+    durationMinutes: 50,
+    viewerCount: 420,
+    sacredRhythmTag: 'Fluidic Healing & Study',
+    quietModeActive: true,
+    publicAccessAllowed: false,
+  },
+
+  // Interfaith Streams
+  {
+    id: 'evt-interfaith-peace-vigil',
+    houseOfWorshipId: 'how-interfaith-chapel',
+    houseOfWorshipName: 'Chapel of Universal Peace & Fellowship',
+    religionId: 'interfaith',
+    title: 'Global Contemplative Peace Vigil & Golden Rule Gathering',
+    description: 'Shared silence, universal readings of love and reciprocity, and collective intentions for world reconciliation.',
+    broadcastType: 'live',
+    speaker: 'Multifaith Council of Elders',
+    scheduledTime: 'Thursday 6:00 PM EST',
+    durationMinutes: 45,
+    viewerCount: 610,
+    sacredRhythmTag: 'Interfaith Vigil',
     quietModeActive: true,
     publicAccessAllowed: false,
   },

@@ -304,7 +304,7 @@ export type StoreCategory =
 
 export interface StoreProduct {
   id: string;
-  traditionId: 'christianity' | 'islam' | 'judaism' | 'hinduism' | 'buddhism' | 'interfaith';
+  traditionId: 'christianity' | 'islam' | 'judaism' | 'hinduism' | 'buddhism' | 'lds' | 'spiritism' | 'interfaith';
   traditionName: string;
   title: string;
   subtitle: string;

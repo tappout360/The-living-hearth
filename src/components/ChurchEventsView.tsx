@@ -24,6 +24,7 @@ import {
   GraduationCap,
   Calendar,
   BookOpen,
+  Lock,
 } from 'lucide-react';
 
 interface PrayerStudyClass {
@@ -88,6 +89,36 @@ const PRAYER_STUDY_CLASSES: PrayerStudyClass[] = [
     companionWorkbookTitle: 'The Satipatthāna Sutta: Mindfulness Class Study Manual',
     enrolledCount: 110,
   },
+  {
+    id: 'cls-lds-01',
+    religionId: 'lds',
+    title: 'Come, Follow Me: Nurturing Faith in Jesus Christ',
+    instructor: 'Elder Marcus Vance & Regional Teachers',
+    schedule: 'Every Sunday at 11:30 AM MST',
+    description: 'Weekly scripture discussion focusing on the Book of Mormon, building personal testimony, and practical Christlike charity.',
+    companionWorkbookTitle: 'Come, Follow Me: Personal & Family Scripture Study Journal',
+    enrolledCount: 84,
+  },
+  {
+    id: 'cls-spi-01',
+    religionId: 'spiritism',
+    title: 'The Gospel in the Home (Evangelho no Lar) & Fluidic Harmony',
+    instructor: 'Spiritist Fellowship Education Council',
+    schedule: 'Every Tuesday at 8:00 PM EST',
+    description: 'Contemplative study of Allan Kardec’s moral teachings, preparing peaceful home atmospheres, and practicing silent passes.',
+    companionWorkbookTitle: 'The Gospel According to Spiritism: Study Workbook',
+    enrolledCount: 65,
+  },
+  {
+    id: 'cls-int-01',
+    religionId: 'interfaith',
+    title: 'The Golden Rule Across Traditions: A Comparative Inquiry',
+    instructor: 'Council of Interfaith Educators',
+    schedule: 'Every Thursday at 7:00 PM EST',
+    description: 'Exploring the shared ethic of reciprocity, non-violence, and compassionate community building across world scriptures.',
+    companionWorkbookTitle: 'The Universal Golden Rule: 12-Tradition Framed Parchment & Study Journal',
+    enrolledCount: 95,
+  },
 ];
 
 export const ChurchEventsView: React.FC = () => {
@@ -96,6 +127,9 @@ export const ChurchEventsView: React.FC = () => {
 
   const mapTraditionToMajorReligion = (trad: string): MajorReligionId => {
     const s = trad.toLowerCase();
+    if (s.includes('latter') || s.includes('lds') || s.includes('mormon')) return 'lds';
+    if (s.includes('spiritis') || s.includes('kardec')) return 'spiritism';
+    if (s.includes('interfaith') || s.includes('explor') || s.includes('universal') || s.includes('prefer not')) return 'interfaith';
     if (s.includes('islam') || s.includes('muslim') || s.includes('sufi')) return 'islam';
     if (s.includes('juda') || s.includes('jew') || s.includes('torah')) return 'judaism';
     if (s.includes('hindu') || s.includes('vedan') || s.includes('gita')) return 'hinduism';
@@ -103,9 +137,17 @@ export const ChurchEventsView: React.FC = () => {
     return 'christianity';
   };
 
-  const [selectedReligion, setSelectedReligion] = useState<MajorReligionId>(() =>
-    mapTraditionToMajorReligion(userProfile.primaryTradition)
-  );
+  const [selectedReligionOverride, setSelectedReligionOverride] = useState<MajorReligionId | null>(null);
+  const [prevTradition, setPrevTradition] = useState(userProfile.primaryTradition);
+
+  // Auto-sync without effect when user switches demo persona or changes tradition in profile
+  if (userProfile.primaryTradition !== prevTradition) {
+    setPrevTradition(userProfile.primaryTradition);
+    setSelectedReligionOverride(null);
+  }
+
+  const selectedReligion = selectedReligionOverride ?? mapTraditionToMajorReligion(userProfile.primaryTradition);
+  const setSelectedReligion = (rel: MajorReligionId) => setSelectedReligionOverride(rel);
 
   // Active Stream Player Modal
   const [activeStream, setActiveStream] = useState<ChurchEventStream | null>(null);
@@ -115,6 +157,7 @@ export const ChurchEventsView: React.FC = () => {
     { id: 'aff-2', sender: 'Pilgrim-19', text: 'Amen. Holding our healthcare workers in prayer.', time: 'Just now' },
   ]);
   const [streamSafetyAlert, setStreamSafetyAlert] = useState<SafetyAnalysisResult | null>(null);
+  const [lockedNotice, setLockedNotice] = useState<string | null>(null);
 
   const [registeredClassIds, setRegisteredClassIds] = useState<string[]>(() => {
     try {
@@ -158,7 +201,7 @@ export const ChurchEventsView: React.FC = () => {
     setChatMessages((prev) => [
       ...prev,
       {
-        id: `msg-${Date.now()}`,
+        id: `msg-${crypto.randomUUID()}`,
         sender: userProfile.displayName,
         text: safety.sanitizedText,
         time: 'Just now',
@@ -206,25 +249,70 @@ export const ChurchEventsView: React.FC = () => {
           </div>
         </div>
 
-        {/* 5 Major Religions Selector */}
+        {/* Faith Tradition Partition Notice Banner */}
+        {userProfile.sameTraditionOnly && (
+          <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/40 text-xs flex flex-wrap items-center justify-between gap-3 text-amber-200/90 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong className="font-medium text-amber-100">Faith Protection Active:</strong> Showing verified congregations and broadcasts strictly for {userProfile.primaryTradition}. Other faith broadcasts are shielded to avoid theological confrontation.
+              </span>
+            </div>
+            <button
+              onClick={() => setActiveTab('learn')}
+              className="px-2.5 py-1 rounded-lg bg-stone-900/90 border border-amber-700/60 text-[11px] text-amber-300 hover:bg-stone-800 transition shrink-0 flex items-center gap-1.5"
+            >
+              <BookOpen className="w-3 h-3" />
+              <span>Explore The Library</span>
+            </button>
+          </div>
+        )}
+
+        {/* Locked Notice Alert */}
+        {lockedNotice && (
+          <div className="p-3 rounded-2xl bg-stone-900 border border-rose-800/60 text-xs text-rose-300 flex items-center justify-between gap-2 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{lockedNotice}</span>
+            </div>
+            <button onClick={() => setLockedNotice(null)} className="text-stone-400 hover:text-stone-200">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Faith Traditions Selector */}
         <div className="pt-2 border-t border-stone-200/20">
           <div className="text-[11px] font-serif uppercase tracking-wider text-stone-400 mb-2 flex items-center justify-between">
-            <span>Filter Houses of Worship & Streams (5 Major Religions)</span>
+            <span>Filter Houses of Worship & Streams (All World Traditions)</span>
             <span className="text-stone-400 font-sans">
               Personalized to: <strong>{userProfile.primaryTradition}</strong>
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             {MAJOR_RELIGIONS.map((rel) => {
               const isSelected = selectedReligion === rel.id;
+              const isLockedByPolicy = userProfile.sameTraditionOnly && !isSelected;
+
               return (
                 <button
                   key={rel.id}
-                  onClick={() => setSelectedReligion(rel.id)}
-                  className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                  onClick={() => {
+                    if (isLockedByPolicy) {
+                      setLockedNotice(
+                        `Faith Protection Active: Your account is set to "Same Tradition Only". Broadcasts for ${rel.name} are shielded. Visit The Library to explore other traditions.`
+                      );
+                      setTimeout(() => setLockedNotice(null), 4500);
+                      return;
+                    }
+                    setSelectedReligion(rel.id);
+                  }}
+                  className={`p-2.5 rounded-2xl border text-left flex items-center gap-2 transition-all relative ${
                     isSelected
                       ? 'shadow-sm font-semibold scale-102'
+                      : isLockedByPolicy
+                      ? 'opacity-50 hover:opacity-70 bg-stone-500/5'
                       : 'opacity-70 hover:opacity-100 hover:bg-stone-500/5'
                   }`}
                   style={{
@@ -236,8 +324,8 @@ export const ChurchEventsView: React.FC = () => {
                       : '#FAF8F5',
                   }}
                 >
-                  <TraditionVisual tradition={rel.name} size={24} color={currentTone.primary} />
-                  <div className="min-w-0">
+                  <TraditionVisual tradition={rel.name} size={20} color={currentTone.primary} />
+                  <div className="min-w-0 flex-1">
                     <span className="text-xs font-serif block truncate">{rel.name}</span>
                     <span className="text-[10px] text-stone-400 block truncate">
                       {rel.id === 'christianity'
@@ -248,9 +336,18 @@ export const ChurchEventsView: React.FC = () => {
                         ? 'Synagogues'
                         : rel.id === 'hinduism'
                         ? 'Mandirs'
-                        : 'Monasteries'}
+                        : rel.id === 'buddhism'
+                        ? 'Monasteries'
+                        : rel.id === 'lds'
+                        ? 'Wards & Stakes'
+                        : rel.id === 'spiritism'
+                        ? 'Centros'
+                        : 'Chapels'}
                     </span>
                   </div>
+                  {isLockedByPolicy && (
+                    <Lock className="w-3 h-3 text-stone-500 shrink-0" />
+                  )}
                 </button>
               );
             })}

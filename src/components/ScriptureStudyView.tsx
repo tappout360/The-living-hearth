@@ -32,12 +32,15 @@ import {
 const HIGHLIGHT_STORAGE_KEY = 'sovereign_sanctuary_scripture_highlights';
 
 export const ScriptureStudyView: React.FC = () => {
-  const { hearthTone, timeOfDay, userProfile } = useHearth();
+  const { hearthTone, timeOfDay, userProfile, setActiveTab } = useHearth();
   const currentTone = HEARTH_TONES[hearthTone];
 
   // Helper to resolve user's primary tradition to a major religion ID
   const mapTraditionToMajorReligion = (trad: string): MajorReligionId => {
     const s = trad.toLowerCase();
+    if (s.includes('latter') || s.includes('lds') || s.includes('mormon')) return 'lds';
+    if (s.includes('spiritis') || s.includes('kardec')) return 'spiritism';
+    if (s.includes('interfaith') || s.includes('explor') || s.includes('universal') || s.includes('prefer not')) return 'interfaith';
     if (s.includes('islam') || s.includes('muslim') || s.includes('sufi')) return 'islam';
     if (s.includes('juda') || s.includes('jew') || s.includes('torah')) return 'judaism';
     if (s.includes('hindu') || s.includes('vedan') || s.includes('gita')) return 'hinduism';
@@ -45,22 +48,32 @@ export const ScriptureStudyView: React.FC = () => {
     return 'christianity'; // Default
   };
 
-  const [selectedReligion, setSelectedReligion] = useState<MajorReligionId>(() =>
-    mapTraditionToMajorReligion(userProfile.primaryTradition)
-  );
-
   const [books, setBooks] = useState<ScriptureBook[]>(PRELOADED_SCRIPTURE_BOOKS);
-  const [selectedBookId, setSelectedBookId] = useState<string>(() => {
-    const defaultBook = PRELOADED_SCRIPTURE_BOOKS.find(
-      (b) => b.religionId === mapTraditionToMajorReligion(userProfile.primaryTradition)
-    );
-    return defaultBook ? defaultBook.id : PRELOADED_SCRIPTURE_BOOKS[0].id;
-  });
+  const [selectedReligionOverride, setSelectedReligionOverride] = useState<MajorReligionId | null>(null);
+  const [selectedBookIdOverride, setSelectedBookIdOverride] = useState<string | null>(null);
+  const [selectedChapterIdOverride, setSelectedChapterIdOverride] = useState<string | null>(null);
+  const [prevTradition, setPrevTradition] = useState(userProfile.primaryTradition);
+
+  // Auto-sync without effect when demo user switches or tradition changes
+  if (userProfile.primaryTradition !== prevTradition) {
+    setPrevTradition(userProfile.primaryTradition);
+    setSelectedReligionOverride(null);
+    setSelectedBookIdOverride(null);
+    setSelectedChapterIdOverride(null);
+  }
+
+  const selectedReligion = selectedReligionOverride ?? mapTraditionToMajorReligion(userProfile.primaryTradition);
+  const setSelectedReligion = (rel: MajorReligionId) => setSelectedReligionOverride(rel);
+
+  const defaultBook = books.find((b) => b.religionId === selectedReligion) || books[0];
+  const selectedBookId = selectedBookIdOverride ?? (defaultBook ? defaultBook.id : books[0].id);
+  const setSelectedBookId = (id: string) => setSelectedBookIdOverride(id);
 
   const activeBook = books.find((b) => b.id === selectedBookId) || books[0];
-  const [selectedChapterId, setSelectedChapterId] = useState<string>(
-    activeBook?.chapters[0]?.id || ''
-  );
+  const selectedChapterId = selectedChapterIdOverride ?? (activeBook?.chapters[0]?.id || '');
+  const setSelectedChapterId = (id: string) => setSelectedChapterIdOverride(id);
+
+  const [lockedNotice, setLockedNotice] = useState<string | null>(null);
 
   const activeChapter =
     activeBook?.chapters.find((c) => c.id === selectedChapterId) || activeBook?.chapters[0];
@@ -325,25 +338,70 @@ export const ScriptureStudyView: React.FC = () => {
           </button>
         </div>
 
-        {/* 5 Major Religions Selector */}
+        {/* Faith Tradition Partition Notice Banner */}
+        {userProfile.sameTraditionOnly && (
+          <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/40 text-xs flex flex-wrap items-center justify-between gap-3 text-amber-200/90 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong className="font-medium text-amber-100">Faith Protection Active:</strong> Consecrated sacred canon for {userProfile.primaryTradition}. To prevent theological confrontation, texts of other traditions are shielded in this prayer room.
+              </span>
+            </div>
+            <button
+              onClick={() => setActiveTab('learn')}
+              className="px-2.5 py-1 rounded-lg bg-stone-900/90 border border-amber-700/60 text-[11px] text-amber-300 hover:bg-stone-800 transition shrink-0 flex items-center gap-1.5"
+            >
+              <BookOpen className="w-3 h-3" />
+              <span>Explore The Library</span>
+            </button>
+          </div>
+        )}
+
+        {/* Locked Notice Alert */}
+        {lockedNotice && (
+          <div className="p-3 rounded-2xl bg-stone-900 border border-rose-800/60 text-xs text-rose-300 flex items-center justify-between gap-2 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{lockedNotice}</span>
+            </div>
+            <button onClick={() => setLockedNotice(null)} className="text-stone-400 hover:text-stone-200">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Sacred Traditions Selector */}
         <div className="pt-2 border-t border-stone-200/20">
           <div className="text-[11px] font-serif uppercase tracking-wider text-stone-400 mb-2 flex items-center justify-between">
-            <span>Select Sacred Canon (5 Major Religions)</span>
+            <span>Select Sacred Canon (All World Traditions)</span>
             <span className="text-stone-400 font-sans">
               Personalized to: <strong>{userProfile.primaryTradition}</strong>
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             {MAJOR_RELIGIONS.map((rel) => {
               const isSelected = selectedReligion === rel.id;
+              const isLockedByPolicy = userProfile.sameTraditionOnly && !isSelected;
+
               return (
                 <button
                   key={rel.id}
-                  onClick={() => handleReligionChange(rel.id)}
-                  className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                  onClick={() => {
+                    if (isLockedByPolicy) {
+                      setLockedNotice(
+                        `Faith Protection Active: Your account is set to "Same Tradition Only". Canon for ${rel.name} is shielded. Visit The Library to explore other traditions.`
+                      );
+                      setTimeout(() => setLockedNotice(null), 4500);
+                      return;
+                    }
+                    handleReligionChange(rel.id);
+                  }}
+                  className={`p-2.5 rounded-2xl border text-left flex items-center gap-2 transition-all relative ${
                     isSelected
                       ? 'shadow-sm font-semibold scale-102'
+                      : isLockedByPolicy
+                      ? 'opacity-50 hover:opacity-70 bg-stone-500/5'
                       : 'opacity-70 hover:opacity-100 hover:bg-stone-500/5'
                   }`}
                   style={{
@@ -355,13 +413,16 @@ export const ScriptureStudyView: React.FC = () => {
                       : '#FAF8F5',
                   }}
                 >
-                  <TraditionVisual tradition={rel.name} size={24} color={currentTone.primary} />
-                  <div className="min-w-0">
+                  <TraditionVisual tradition={rel.name} size={20} color={currentTone.primary} />
+                  <div className="min-w-0 flex-1">
                     <span className="text-xs font-serif block truncate">{rel.name}</span>
                     <span className="text-[10px] text-stone-400 block truncate">
                       {rel.scriptureName.split(' ')[0]}
                     </span>
                   </div>
+                  {isLockedByPolicy && (
+                    <Lock className="w-3 h-3 text-stone-500 shrink-0" />
+                  )}
                 </button>
               );
             })}

@@ -4,6 +4,7 @@ import { HEARTH_TONES } from '../data/mockData';
 import {
   SACRED_STORE_PRODUCTS,
   STORE_CATEGORIES,
+  VERIFIED_PARTNER_SUPPLIERS,
 } from '../data/storeData';
 import type { StoreProduct, StoreCategory } from '../types';
 import { TraditionVisual } from './ReligiousVisuals';
@@ -23,14 +24,20 @@ import {
   ExternalLink,
   Crown,
   GraduationCap,
+  Truck,
+  Building2,
+  AlertCircle,
 } from 'lucide-react';
 
-const TRADITION_FILTERS = [
+const TRADITION_FILTERS: { id: StoreProduct['traditionId']; label: string; name: string }[] = [
   { id: 'christianity', label: 'Christianity', name: 'Christianity' },
   { id: 'islam', label: 'Islam', name: 'Islam' },
   { id: 'judaism', label: 'Judaism', name: 'Judaism' },
   { id: 'hinduism', label: 'Hinduism', name: 'Hinduism' },
   { id: 'buddhism', label: 'Buddhism', name: 'Buddhism' },
+  { id: 'lds', label: 'Latter-day Saint', name: 'The Church of Jesus Christ of Latter-day Saints' },
+  { id: 'spiritism', label: 'Spiritism', name: 'Spiritism' },
+  { id: 'interfaith', label: 'Interfaith', name: 'Interfaith / Exploring' },
 ];
 
 export const StoreView: React.FC = () => {
@@ -50,8 +57,11 @@ export const StoreView: React.FC = () => {
   const currentTone = HEARTH_TONES[hearthTone];
 
   // Map user's primary tradition to store filter
-  const mapUserTraditionToStore = (trad: string): 'christianity' | 'islam' | 'judaism' | 'hinduism' | 'buddhism' => {
+  const mapUserTraditionToStore = (trad: string): StoreProduct['traditionId'] => {
     const s = trad.toLowerCase();
+    if (s.includes('latter') || s.includes('lds') || s.includes('mormon')) return 'lds';
+    if (s.includes('spiritis') || s.includes('kardec')) return 'spiritism';
+    if (s.includes('interfaith') || s.includes('explor') || s.includes('universal') || s.includes('prefer not')) return 'interfaith';
     if (s.includes('islam') || s.includes('muslim') || s.includes('sufi')) return 'islam';
     if (s.includes('juda') || s.includes('jew') || s.includes('torah')) return 'judaism';
     if (s.includes('hindu') || s.includes('vedan') || s.includes('gita')) return 'hinduism';
@@ -59,15 +69,25 @@ export const StoreView: React.FC = () => {
     return 'christianity';
   };
 
-  const [activeTradition, setActiveTradition] = useState<'christianity' | 'islam' | 'judaism' | 'hinduism' | 'buddhism'>(
-    () => mapUserTraditionToStore(userProfile.primaryTradition)
-  );
+  const [selectedTraditionOverride, setSelectedTraditionOverride] = useState<StoreProduct['traditionId'] | null>(null);
+  const [prevTradition, setPrevTradition] = useState(userProfile.primaryTradition);
+
+  // Auto-sync without effect when user switches demo persona or updates primary tradition
+  if (userProfile.primaryTradition !== prevTradition) {
+    setPrevTradition(userProfile.primaryTradition);
+    setSelectedTraditionOverride(null);
+  }
+
+  const activeTradition = selectedTraditionOverride ?? mapUserTraditionToStore(userProfile.primaryTradition);
+  const setActiveTradition = (trad: StoreProduct['traditionId']) => setSelectedTraditionOverride(trad);
 
   const [selectedCategory, setSelectedCategory] = useState<StoreCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  const [lockedNotice, setLockedNotice] = useState<string | null>(null);
 
   // Filter products by selected tradition, category, and search query
   const filteredProducts = SACRED_STORE_PRODUCTS.filter((prod) => {
@@ -137,8 +157,17 @@ export const StoreView: React.FC = () => {
             </p>
           </div>
 
-          {/* Cart Trigger Button */}
-          <div className="flex items-center gap-3">
+          {/* Actions & Cart Trigger */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setIsSupplierModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-stone-900/90 border border-stone-800 hover:border-stone-700 text-stone-300 text-xs transition shadow-xs"
+              title="View verified publisher cooperatives & fulfillment partners"
+            >
+              <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Partner Publishers</span>
+            </button>
+
             <button
               onClick={() => setIsCartOpen(true)}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-stone-900/90 border border-stone-700/80 hover:border-stone-500 text-stone-100 shadow-md transition"
@@ -191,6 +220,38 @@ export const StoreView: React.FC = () => {
         </div>
       </div>
 
+      {/* Faith Tradition Partition Notice Banner */}
+      {userProfile.sameTraditionOnly && (
+        <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/40 text-xs flex flex-wrap items-center justify-between gap-3 text-amber-200/90 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong className="font-medium text-amber-100">Faith Partition Shield Active:</strong> Showing offerings consecrated strictly for {userProfile.primaryTradition}. Cross-faith items are shielded to preserve sacred reverence.
+            </span>
+          </div>
+          <button
+            onClick={() => setActiveTab('learn')}
+            className="px-2.5 py-1 rounded-lg bg-stone-900/90 border border-amber-700/60 text-[11px] text-amber-300 hover:bg-stone-800 transition shrink-0 flex items-center gap-1.5"
+          >
+            <BookOpen className="w-3 h-3" />
+            <span>Visit The Library</span>
+          </button>
+        </div>
+      )}
+
+      {/* Locked Notice Notification */}
+      {lockedNotice && (
+        <div className="p-3 rounded-2xl bg-stone-900 border border-rose-800/60 text-xs text-rose-300 flex items-center justify-between gap-2 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{lockedNotice}</span>
+          </div>
+          <button onClick={() => setLockedNotice(null)} className="text-stone-400 hover:text-stone-200">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* 2. Faith Tradition Selector (Zero Cross-Contamination Guard) */}
       <div className="bg-stone-900/60 p-4 rounded-3xl border border-stone-800">
         <div className="flex items-center justify-between mb-3 text-xs">
@@ -202,34 +263,50 @@ export const StoreView: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           {TRADITION_FILTERS.map((trad) => {
             const isSelected = activeTradition === trad.id;
+            const isLockedByPolicy = userProfile.sameTraditionOnly && !isSelected;
+
             return (
               <button
                 key={trad.id}
-                onClick={() => setActiveTradition(trad.id as typeof activeTradition)}
-                className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
+                onClick={() => {
+                  if (isLockedByPolicy) {
+                    setLockedNotice(
+                      `Faith Partition Active: Your account is set to "Same Tradition Only". Materials for ${trad.label} are shielded. Visit The Library to learn about other traditions.`
+                    );
+                    setTimeout(() => setLockedNotice(null), 4500);
+                    return;
+                  }
+                  setActiveTradition(trad.id);
+                }}
+                className={`p-2.5 rounded-2xl border text-left transition flex items-center gap-2 relative ${
                   isSelected
                     ? 'bg-stone-800/90 shadow-sm'
+                    : isLockedByPolicy
+                    ? 'bg-stone-950/20 border-stone-900/80 opacity-60 hover:opacity-80'
                     : 'bg-stone-950/40 border-stone-800/80 hover:bg-stone-900/60'
                 }`}
                 style={{
                   borderColor: isSelected ? currentTone.primary : undefined,
                 }}
               >
-                <TraditionVisual tradition={trad.name} size={22} />
-                <div className="min-w-0">
+                <TraditionVisual tradition={trad.name} size={20} />
+                <div className="min-w-0 flex-1">
                   <div
-                    className="text-xs font-medium truncate"
+                    className="text-[11px] font-medium truncate"
                     style={{ color: isSelected ? currentTone.primary : '#E7E5E4' }}
                   >
                     {trad.label}
                   </div>
-                  <div className="text-[10px] text-stone-500">
-                    {isSelected ? 'Active Store' : 'View Catalog'}
+                  <div className="text-[9px] text-stone-500 truncate">
+                    {isSelected ? 'Active Store' : isLockedByPolicy ? 'Shielded' : 'View Catalog'}
                   </div>
                 </div>
+                {isLockedByPolicy && (
+                  <Lock className="w-3 h-3 text-stone-600 shrink-0" />
+                )}
               </button>
             );
           })}
@@ -700,6 +777,74 @@ export const StoreView: React.FC = () => {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 6. Partner Publishers & Ethical Fulfillment Modal */}
+      {isSupplierModalOpen && (
+        <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-stone-900 border border-stone-800 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-stone-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Building2 className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <h3 className="font-serif text-lg text-stone-100 font-medium">
+                    Verified Ethical Publishers & Fulfillment Network
+                  </h3>
+                  <p className="text-[11px] text-stone-400">
+                    Direct integration with academic and non-profit sacred presses. Zero commercial tracking pixels.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSupplierModalOpen(false)}
+                className="p-1.5 text-stone-400 hover:text-stone-100 rounded-full hover:bg-stone-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-3.5">
+              {VERIFIED_PARTNER_SUPPLIERS.map((supplier) => (
+                <div
+                  key={supplier.id}
+                  className="p-4 rounded-2xl bg-stone-950/60 border border-stone-800/80 space-y-2 hover:border-stone-700 transition"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h4 className="font-medium text-stone-200 text-xs sm:text-sm">
+                        {supplier.name}
+                      </h4>
+                      <div className="text-[11px] text-stone-500">
+                        {supplier.specialty} • {supplier.location}
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
+                      {supplier.fulfillmentType}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-stone-900 text-[11px] text-stone-400">
+                    <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>{supplier.privacyGuarantee}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 border-t border-stone-800 bg-stone-950/60 flex items-center justify-between text-xs text-stone-400">
+              <span className="flex items-center gap-1.5">
+                <Truck className="w-4 h-4 text-stone-500" />
+                Carbon-neutral fulfillment & eco-friendly packaging
+              </span>
+              <button
+                onClick={() => setIsSupplierModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-medium transition"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

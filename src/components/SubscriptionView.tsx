@@ -342,7 +342,7 @@ export const SubscriptionView: React.FC = () => {
               </tr>
               <tr>
                 <td className="p-4 pl-6 font-medium text-stone-200">Canonical Scripture Study & Highlighting</td>
-                <td className="p-4 text-center text-stone-300">All 5 Canons</td>
+                <td className="p-4 text-center text-stone-300">All 8 Canons</td>
                 <td className="p-4 text-center text-emerald-400">Unlimited Vaults</td>
                 <td className="p-4 text-center text-emerald-400 pr-6">Unlimited Vaults</td>
               </tr>
